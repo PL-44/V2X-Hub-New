@@ -313,10 +313,17 @@ void MessageLoggerPlugin::HandleBasicSafetyMessage(BsmMessage &msg, routeable_me
 			if (bsm->partII[0].list.count >= BSMpartIIExtension__partII_Value_PR_SpecialVehicleExtensions ) {
 				try
 				{
+					#if SAEJ2735_SPEC < 2023
 					if(bsm->partII[0].list.array[1]->partII_Value.choice.SpecialVehicleExtensions.trailers !=NULL){
 						cJSON_AddItemToObject(_BsmMessageContent, "trailerPivot", cJSON_CreateNumber(bsm->partII[0].list.array[1]->partII_Value.choice.SpecialVehicleExtensions.trailers->connection.pivotOffset));
 						cJSON_AddItemToObject(_BsmMessageContent, "trailreLength", cJSON_CreateNumber(bsm->partII[0].list.array[1]->partII_Value.choice.SpecialVehicleExtensions.trailers->units.list.array[0]->length));
 						cJSON_AddItemToObject(_BsmMessageContent, "trailerHeight", cJSON_CreateNumber(bsm->partII[0].list.array[1]->partII_Value.choice.SpecialVehicleExtensions.trailers->units.list.array[0]->height[0]));
+					#else
+					if(bsm->partII[0].list.array[1]->partII_Value.choice.SpecialVehicleExtensions.deprecated !=NULL){
+						cJSON_AddItemToObject(_BsmMessageContent, "trailerPivot", cJSON_CreateNumber(bsm->partII[0].list.array[1]->partII_Value.choice.SpecialVehicleExtensions.deprecated->connection.pivotOffset));
+						cJSON_AddItemToObject(_BsmMessageContent, "trailreLength", cJSON_CreateNumber(bsm->partII[0].list.array[1]->partII_Value.choice.SpecialVehicleExtensions.deprecated->units.list.array[0]->length));
+						cJSON_AddItemToObject(_BsmMessageContent, "trailerHeight", cJSON_CreateNumber(bsm->partII[0].list.array[1]->partII_Value.choice.SpecialVehicleExtensions.deprecated->units.list.array[0]->height[0]));
+					#endif
 					}
 					else 
 					{
