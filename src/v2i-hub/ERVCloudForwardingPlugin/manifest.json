@@ -44,10 +44,15 @@
             "description":"SNMP v3 authentication passphrase"
         },
 		{
-            "key":"SecurityUser",
-            "default":"authOnlyUser",
-            "description":"SNMP Security Name"
-        },
+			"key":"SNMPUser",
+			"default":"dummyUser",
+			"description":"SNMP v3 user."
+		},
+		{
+			"key":"SecurityLevel",
+			"default":"authNoPriv",
+			"description":"SNMP Access Control. Usage: noAuthNoPriv, authNoPriv, or authPriv."
+		},
 		{
             "key":"GPSOID",
             "default":"1.0.15628.4.1.8.5.0",

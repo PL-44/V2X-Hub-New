@@ -10,7 +10,7 @@
     {
       "key":"LogLevel",
       "default":"INFO",
-      "description":"The log level for this plugin"
+      "description":"The log level for this plugin."
     },
     {
       "key": "Messages_Destination_1",
@@ -35,22 +35,22 @@
     {
       "key": "Destination_1",
       "default": "127.0.0.1:1516",
-      "description": "The destination UDP server(s) and port number(s) on the V2X radio for all messages specified by Messages_Destination_1."
+      "description": "The destination UDP or SNMP server(s) and port number(s) on the V2X radio for all messages specified by Messages_Destination_1."
     },
     {
       "key": "Destination_2",
       "default": "0",
-      "description": "The destination UDP server(s) and port number(s) on the V2X radio for all messages specified by Messages_Destination_2."
+      "description": "The destination UDP or SNMP server(s) and port number(s) on the V2X radio for all messages specified by Messages_Destination_2."
     },
     {
       "key": "Destination_3",
       "default": "0",
-      "description": "The destination UDP server(s) and port number(s) on the V2X radio for all messages specified by Messages_Destination_3."
+      "description": "The destination UDP or SNMP server(s) and port number(s) on the V2X radio for all messages specified by Messages_Destination_3."
     },
     {
       "key": "Destination_4",
       "default": "0",
-       "description": "The destination UDP server(s) and port number(s) on the V2X radio for all messages specified by Messages_Destination_4."
+       "description": "The destination UDP or SNMP server(s) and port number(s) on the V2X radio for all messages specified by Messages_Destination_4."
     },
     {
       "key": "signMessage",
@@ -60,12 +60,32 @@
     {
       "key": "HSMurl",
       "default": "http://<softHSM IP>:3000/v1/scms/",
-      "description": "REST API endpoint url needed to make HSM calls"
+      "description": "REST API endpoint url needed to make HSM calls."
     },
     {
       "key": "MuteDsrcRadio",
       "default": "0",
-      "description": "If true (1) then do not send packets to the radio for broadcast"
+      "description": "If true (1) then do not send packets to the radio for broadcast."
+    },
+    {
+      "key": "EnableSNMP",
+      "default": "0",
+      "description":"0 if False and 1 if True, indicating whether to send packet as SNMPv3 command."
+    },
+    {
+      "key":"AuthPassPhrase",
+      "default":"dummyPass",
+      "description":"SNMP v3 authentication passphrase."
+    },
+    {
+      "key":"SNMPUser",
+      "default":"dummyUser",
+      "description":"SNMP v3 user."
+    },
+    {
+      "key":"SecurityLevel",
+      "default":"authNoPriv",
+      "description":"SNMP Access Control. Usage: noAuthNoPriv, authNoPriv, or authPriv."
     }
-  ]
+    ]
 }

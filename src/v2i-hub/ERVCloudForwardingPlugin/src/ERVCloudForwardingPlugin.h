@@ -55,7 +55,8 @@ namespace ERVCloudForwardingPlugin
         uint32_t _max_rsu_connection_attempt = 30;
         // Waiting to start the web service
         uint32_t _max_web_service_waiting = 10; // unit of second
-        string _securityUser;
+        string _snmpUser;
+        string _securityLevel;
         string _authPassPhrase;
         string _GPSOID;
         const string _CLOUDURL = "http://127.0.0.1:33333";

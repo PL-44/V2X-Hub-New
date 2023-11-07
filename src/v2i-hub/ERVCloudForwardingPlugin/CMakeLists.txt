@@ -1,4 +1,4 @@
-PROJECT(ERVCloudForwardingPlugin VERSION 7.5.1 LANGUAGES CXX)
+PROJECT(ERVCloudForwardingPlugin VERSION 7.5.0 LANGUAGES CXX)
 
 SET(TMX_PLUGIN_NAME "ERVCloudForwarding")
 add_compile_options(-fPIC)
@@ -29,7 +29,7 @@ link_directories(${CMAKE_PREFIX_PATH}/lib)
 # ############
 enable_testing()
 include_directories(${PROJECT_SOURCE_DIR}/src)
-add_library(${PROJECT_NAME}_lib src/ERVCloudForwardingWorker.cpp src/SNMPClient.cpp)
+add_library(${PROJECT_NAME}_lib src/ERVCloudForwardingWorker.cpp) # src/SNMPClient.cpp)
 target_link_libraries(${PROJECT_NAME}_lib PUBLIC NemaTode ${TMXAPI_LIBRARIES}
     ${ASN_J2735_LIBRARIES} tmxutils ${NETSNMPAGENT} ${NETSNMPMIBS} ${NETSNMP} ${NETSNMP_LIBRARIES})
 set(BINARY ${PROJECT_NAME}_test)

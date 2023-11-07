@@ -15,6 +15,7 @@
 #include <vector>
 #include "PluginClient.h"
 #include "UdpClient.h"
+#include "SNMPClient.h"
 
 #include <boost/chrono.hpp>
 #include <FrequencyThrottle.h>
@@ -22,9 +23,11 @@
 #include <tmx/json/cJSON.h>
 #include <tmx/Security/include/base64.h>
 
+using namespace tmx::utils;
 
 namespace ImmediateForward
 {
+	
 
 struct MessageConfig
 {
@@ -60,12 +63,22 @@ private:
 	std::mutex _mutexUdpClient;
 	typedef std::vector<tmx::utils::UdpClient *> svr_list;
 	std::array<svr_list, 4> _udpClientList;
+
+	typedef std::vector<tmx::utils::snmp_client *> snmp_list;
+	std::array<snmp_list, 4> _SNMPClientList;
+
 	std::vector<MessageConfig> _messageConfigMap;
 	std::map<std::string, int> _messageCountMap;
-	std::string signatureData; 
-	std::string url; 
-	std::string baseurl; 
-	unsigned int signState; 
+	std::string _rsuIp;
+	uint16_t _snmpPort;
+	std::string signatureData;
+	std::string url;
+	std::string baseurl;
+	std::string _securityLevel;
+	std::string _snmpUser;
+    std::string _authPassPhrase;
+	unsigned int signState;
+	unsigned int snmpState;
 
 	// Thread safe bool set to true the first time the configuration has been read.
 	std::atomic<bool> _configRead;
@@ -77,7 +90,6 @@ private:
 
 	bool _muteDsrc;
 	// @SONAR_START@
-
 };
 
 } /* namespace ImmediateForward */
