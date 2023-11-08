@@ -212,6 +212,7 @@ bool ImmediateForwardPlugin::UpdateUdpClientFromConfigSettings(uint clientIndex)
 		GetConfigValue<string>("SecurityLevel", _securityLevel);
 		GetConfigValue<string>("SNMPUser", _snmpUser);
 		GetConfigValue<string>("AuthPassPhrase", _authPassPhrase);
+		GetConfigValue("SNMPVersion", _snmpVersion);
 
 		// Take the lock while shared data is accessed.
 		// A lock_guard will unlock when it goes out of scope (even if an exception occurs).
@@ -253,9 +254,9 @@ bool ImmediateForwardPlugin::UpdateUdpClientFromConfigSettings(uint clientIndex)
 					_rsuIp = addr[0];
 					_snmpPort = stoul(addr[1]);
 					PLOG(logINFO) << "Create SNMP Client to connect to RSU. RSU IP: " << _rsuIp << ",\tRSU Port: " << _snmpPort <<
-							"\tSNMP User: " << _snmpUser << ",\tSecurity Level: " << _securityLevel << ",\tAuthentication Passphrase: " << _authPassPhrase << endl;
+							"\tSNMP User: " << _snmpUser << ",\tSecurity Level: " << _securityLevel << ",\tAuthentication Passphrase: " << _authPassPhrase << "\tSNMP Version: " << _snmpVersion << endl;
 					// update SNMPClientList with the creation of a new SNMPClient with given params
-					_SNMPClientList[clientIndex].push_back(new snmp_client(_rsuIp, _snmpPort, "public", _snmpUser, _securityLevel, _authPassPhrase, 3, 10000)); // updated
+					_SNMPClientList[clientIndex].push_back(new snmp_client(_rsuIp, _snmpPort, "public", _snmpUser, _securityLevel, _authPassPhrase, _snmpVersion, 10000)); // updated
 					PLOG(logDEBUG) << "Client added to list";
 				}
 				else
@@ -459,7 +460,7 @@ void ImmediateForwardPlugin::SendMessageToRadio(IvpMessage *msg)
 				auto type_INT = tmx::utils::snmp_response_obj::response_type::INTEGER;
 				auto type_STR = tmx::utils::snmp_response_obj::response_type::STRING;
 
-				auto snmpRsuMode = snmp_client(_rsuIp, _snmpPort, "public", _snmpUser, _securityLevel, _authPassPhrase, 3, 10000);
+				auto snmpRsuMode = snmp_client(_rsuIp, _snmpPort, "public", _snmpUser, _securityLevel, _authPassPhrase, _snmpVersion, 10000);
 				tmx::utils::snmp_response_obj modeMessage;
 				modeMessage.type = type_INT;
 				modeMessage.val_int = 2;
@@ -487,11 +488,6 @@ void ImmediateForwardPlugin::SendMessageToRadio(IvpMessage *msg)
 						_SNMPClientList[_messageConfigMap[configIndex].ClientIndex][i]->process_snmp_request("1.3.6.1.4.1.1206.4.2.18.4.1", tmx::utils::request_type::GET, maxIFMs);
 
 						// The following commands are reflective of NTCIP spec, NOT the current spec.
-						tmx::utils::snmp_response_obj msgEnableObj;
-						msgEnableObj.type = type_INT;
-						msgEnableObj.val_int = 1; // should always be set to enable
-						_SNMPClientList[_messageConfigMap[configIndex].ClientIndex][i]->process_snmp_request("1.3.6.1.4.1.1206.4.2.18.4.2.1.4", request, msgEnableObj);
-
 						tmx::utils::snmp_response_obj msgIndexObj;
 						msgIndexObj.type = type_INT;
 						msgIndexObj.val_int = 0; // needs updating
@@ -508,20 +504,17 @@ void ImmediateForwardPlugin::SendMessageToRadio(IvpMessage *msg)
 						channelObj.val_int = stoi(_messageConfigMap[configIndex].Channel);
 						_SNMPClientList[_messageConfigMap[configIndex].ClientIndex][i]->process_snmp_request("1.3.6.1.4.1.1206.4.2.18.4.2.1.3", request, channelObj);
 
+						tmx::utils::snmp_response_obj msgEnableObj;
+						msgEnableObj.type = type_INT;
+						msgEnableObj.val_int = 1; // should always be set to enable
+						_SNMPClientList[_messageConfigMap[configIndex].ClientIndex][i]->process_snmp_request("1.3.6.1.4.1.1206.4.2.18.4.2.1.4", request, msgEnableObj);
+
 						tmx::utils::snmp_response_obj statusObj;
 						statusObj.type = type_INT;
 						statusObj.val_int = 1;
 						_SNMPClientList[_messageConfigMap[configIndex].ClientIndex][i]->process_snmp_request("1.3.6.1.4.1.1206.4.2.18.4.2.1.5", request, statusObj);
 
-						// //Payload - removed per updated NTCIP 1218 spec as of 11/06/23
-						// tmx::utils::snmp_response_obj payloadObj;
-						// payloadObj.type = type_STR;
-						// std::vector<char> payloadVector(payloadbyte.begin(), payloadbyte.end());
-						// payloadObj.val_string = payloadVector;
-						// _SNMPClientList[_messageConfigMap[configIndex].ClientIndex][i]->process_snmp_request("1.3.6.1.4.1.1206.4.2.18.4.2.1.8", request, payloadObj);
-
-						// TBD if needed in the final IFT update, listed for convienence
-						
+						// TBD if needed in the final IFM update, listed for convienence
 						// TODO: add parameter for message priority
 						tmx::utils::snmp_response_obj priorityObj;
 						priorityObj.type = type_INT;
@@ -535,6 +528,12 @@ void ImmediateForwardPlugin::SendMessageToRadio(IvpMessage *msg)
 						optionsObj.val_string = bits0_3;
 						_SNMPClientList[_messageConfigMap[configIndex].ClientIndex][i]->process_snmp_request("1.3.6.1.4.1.1206.4.2.18.4.2.1.7", request, optionsObj);
 						
+						// //Payload - removed per updated NTCIP 1218 spec as of 11/06/23
+						// tmx::utils::snmp_response_obj payloadObj;
+						// payloadObj.type = type_STR;
+						// std::vector<char> payloadVector(payloadbyte.begin(), payloadbyte.end());
+						// payloadObj.val_string = payloadVector;
+						// _SNMPClientList[_messageConfigMap[configIndex].ClientIndex][i]->process_snmp_request("1.3.6.1.4.1.1206.4.2.18.4.2.1.8", request, payloadObj);
 
 						// Current DRSC Spec
 						// rsuIFMIndex		iso.0.15628.4.1.5.1.1 			RsuTableIndex
@@ -553,7 +552,7 @@ void ImmediateForwardPlugin::SendMessageToRadio(IvpMessage *msg)
 						// Status		1.3.6.1.4.1.1206.4.2.18.4.2.1.5		RowStatus
 						// Priority		1.3.6.1.4.1.1206.4.2.18.4.2.1.6		int32
 						// Options 		1.3.6.1.4.1.1206.4.2.18.4.2.1.7		(used to enabled signed or encrypted messages + protocol, 4 bit binary)
-						// Payload - 	1.3.6.1.4.1.1206.4.2.18.4.2.1.8		octet string
+						// Payload - 	1.3.6.1.4.1.1206.4.2.18.4.2.1.8		octet string // ***removed from standard
 
 					}
 					else{
@@ -564,38 +563,35 @@ void ImmediateForwardPlugin::SendMessageToRadio(IvpMessage *msg)
 			}
 
 			// Send the message using the configured UDP client.
+			os << "Version=0.7" << "\n";
+			os << "Type=" << _messageConfigMap[configIndex].SendType << "\n" << "PSID=" << _messageConfigMap[configIndex].Psid << "\n";
+			if (_messageConfigMap[configIndex].Channel.empty())
+				os << "Priority=7" << "\n" << "TxMode=CONT" << "\n" << "TxChannel=" << msg->dsrcMetadata->channel << "\n";
 			else
+				os << "Priority=7" << "\n" << "TxMode=CONT" << "\n" << "TxChannel=" << _messageConfigMap[configIndex].Channel << "\n";
+			os << "TxInterval=0" << "\n" << "DeliveryStart=\n" << "DeliveryStop=\n";
+			os << "Signature="<< (signState == 1 ? "True" : "False") << "\n" << "Encryption=False\n";
+			os << "Payload=" << payloadbyte << "\n";
+
+			string message = os.str(); // finalized message to send to clients
+
+			for (uint i = 0; i < _udpClientList[_messageConfigMap[configIndex].ClientIndex].size(); i++)
 			{
-				os << "Version=0.7" << "\n";
-				os << "Type=" << _messageConfigMap[configIndex].SendType << "\n" << "PSID=" << _messageConfigMap[configIndex].Psid << "\n";
-				if (_messageConfigMap[configIndex].Channel.empty())
-					os << "Priority=7" << "\n" << "TxMode=CONT" << "\n" << "TxChannel=" << msg->dsrcMetadata->channel << "\n";
-				else
-					os << "Priority=7" << "\n" << "TxMode=CONT" << "\n" << "TxChannel=" << _messageConfigMap[configIndex].Channel << "\n";
-				os << "TxInterval=0" << "\n" << "DeliveryStart=\n" << "DeliveryStop=\n";
-				os << "Signature="<< (signState == 1 ? "True" : "False") << "\n" << "Encryption=False\n";
-				os << "Payload=" << payloadbyte << "\n";
+				//cout << message << endl;
 
-				string message = os.str(); // finalized message to send to clients
-
-				for (uint i = 0; i < _udpClientList[_messageConfigMap[configIndex].ClientIndex].size(); i++)
+				if (_udpClientList[_messageConfigMap[configIndex].ClientIndex][i] != NULL)
 				{
-					//cout << message << endl;
+					PLOG(logDEBUG2) << _logPrefix << "Sending - TmxType: " << _messageConfigMap[configIndex].TmxType << ", SendType: " << _messageConfigMap[configIndex].SendType
+						<< ", PSID: " << _messageConfigMap[configIndex].Psid << ", Client: " << _messageConfigMap[configIndex].ClientIndex
+						<< ", Channel: " << (_messageConfigMap[configIndex].Channel.empty() ? ::to_string( msg->dsrcMetadata->channel) : _messageConfigMap[configIndex].Channel)
+						<< ", Port: " << _udpClientList[_messageConfigMap[configIndex].ClientIndex][i]->GetPort();
 
-					if (_udpClientList[_messageConfigMap[configIndex].ClientIndex][i] != NULL)
-					{
-						PLOG(logDEBUG2) << _logPrefix << "Sending - TmxType: " << _messageConfigMap[configIndex].TmxType << ", SendType: " << _messageConfigMap[configIndex].SendType
-							<< ", PSID: " << _messageConfigMap[configIndex].Psid << ", Client: " << _messageConfigMap[configIndex].ClientIndex
-							<< ", Channel: " << (_messageConfigMap[configIndex].Channel.empty() ? ::to_string( msg->dsrcMetadata->channel) : _messageConfigMap[configIndex].Channel)
-							<< ", Port: " << _udpClientList[_messageConfigMap[configIndex].ClientIndex][i]->GetPort();
-
-						_udpClientList[_messageConfigMap[configIndex].ClientIndex][i]->Send(message); // sending message to client
-					}
-					else
-					{
-						SetStatus<uint>(Key_SkippedInvalidUdpClient, ++_skippedInvalidUdpClient);
-						PLOG(logWARNING) << "UDP Client Invalid. Cannot send message. TmxType: " << _messageConfigMap[configIndex].TmxType;
-					}
+					_udpClientList[_messageConfigMap[configIndex].ClientIndex][i]->Send(message); // sending message to client
+				}
+				else
+				{
+					SetStatus<uint>(Key_SkippedInvalidUdpClient, ++_skippedInvalidUdpClient);
+					PLOG(logWARNING) << "UDP Client Invalid. Cannot send message. TmxType: " << _messageConfigMap[configIndex].TmxType;
 				}
 			}
 		}

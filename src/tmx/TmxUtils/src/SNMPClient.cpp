@@ -4,7 +4,7 @@ namespace tmx::utils {
     
     // Client defaults to SNMPv3
     snmp_client::snmp_client(const std::string& ip, const int& port, const std::string& community, 
-        const std::string &snmp_user, const std::string &securityLevel, const std::string &authPassPhrase, int snmp_version, int timeout)
+        const std::string &snmp_user, const std::string &securityLevel, const std::string &authPassPhrase, uint8_t snmp_version, int timeout)
 
         : ip_(ip), port_(port), community_(community),snmp_version_(snmp_version), timeout_(timeout)
     {
@@ -14,7 +14,7 @@ namespace tmx::utils {
         PLOG(logINFO) << "Target device NTCIP port: " << port_;
 
         // Bring the IP address and port of the target SNMP device in the required form, which is "IPADDRESS:PORT":
-        std::string ip_port_string = ip_ + ":" + std::to_string(port_);    
+        std::string ip_port_string = ip_ + ":" + std::to_string(port_);
         char* ip_port = &ip_port_string[0];
         
         // Initialize SNMP session parameters

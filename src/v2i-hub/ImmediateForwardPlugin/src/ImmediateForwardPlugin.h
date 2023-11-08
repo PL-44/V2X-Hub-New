@@ -77,6 +77,7 @@ private:
 	std::string _securityLevel;
 	std::string _snmpUser;
     std::string _authPassPhrase;
+	uint8_t _snmpVersion;
 	unsigned int signState;
 	unsigned int snmpState;
 

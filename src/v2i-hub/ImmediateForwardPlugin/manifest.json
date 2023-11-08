@@ -86,6 +86,11 @@
       "key":"SecurityLevel",
       "default":"authNoPriv",
       "description":"SNMP Access Control. Usage: noAuthNoPriv, authNoPriv, or authPriv."
+    },
+    {
+      "key":"SNMPVersion",
+      "default":"3",
+      "description":"Set SNMP version to use."
     }
     ]
 }

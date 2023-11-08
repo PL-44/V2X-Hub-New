@@ -67,7 +67,7 @@ class snmp_client
         std::string community_ = "public";
         /* net-snmp version definition: SNMP_VERSION_1:0 SNMP_VERSION_2c:1 SNMP_VERSION_2u:2 SNMP_VERSION_3:3
         https://github.com/net-snmp/net-snmp/blob/master/include/net-snmp/library/snmp.h */
-        int snmp_version_ = 3; // default to 3 since previous versions not compatable currently
+        uint8_t snmp_version_ = SNMP_VERSION_3; // default to 3 since previous versions not compatable currently
         /*Time after which the the snmp request times out*/
         int timeout_ = 10000;
 
@@ -77,11 +77,11 @@ class snmp_client
          * @param ip The ip ,as a string, for the tsc_client_service to establish an snmp communication with.
          * @param port Target port as integer on the host for snmp communication.
          * @param community The community id as a string. Defaults to "public" if unassigned.
-         * @param snmp_version The snmp_version as defined in net-snmp.Default to 0 if unassigned.
+         * @param snmp_version The snmp_version as defined in net-snmp. Default to 0 if unassigned.
          *                      net-snmp version definition: SNMP_VERSION_1:0 SNMP_VERSION_2c:1 SNMP_VERSION_2u:2 SNMP_VERSION_3:3"
          * @param timeout The time in microseconds after which an snmp session request expires. Defaults to 100 if unassigned
          * **/
-        snmp_client(const std::string& ip, const int& port, const std::string& community, const std::string &snmp_user, const std::string &securityLevel, const std::string &authPassPhrase, int snmp_version = 0, int timeout = 100);
+        snmp_client(const std::string& ip, const int& port, const std::string& community, const std::string &snmp_user, const std::string &securityLevel, const std::string &authPassPhrase, uint8_t snmp_version, int timeout = 100);
 
         /* Disable default copy constructor*/
         snmp_client() = delete;
