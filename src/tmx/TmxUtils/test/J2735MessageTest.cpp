@@ -806,6 +806,7 @@ TEST_F(J2735MessageTest, EncodeSDSM)
 	objectData->detObjCommon.headingConf = 1;
 	ASN_SEQUENCE_ADD(&objects->list.array, objectData);
 	message->objects = *objects;
+	std::cout << message <<std::endl;
 	xer_fprint(stdout, &asn_DEF_SensorDataSharingMessage, message);
 
 	//Encode SDSM 
