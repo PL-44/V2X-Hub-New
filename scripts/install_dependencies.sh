@@ -3,8 +3,10 @@
 # exit on errors
 set -e
 
+distro=$(cat /etc/lsb-release | grep DISTRIB_CODENAME |  tr -d "DISTRIB_CODENAME=")
+
 # add the STOL APT repository
-echo "deb [trusted=yes] http://s3.amazonaws.com/stol-apt-repository develop main" > /etc/apt/sources.list.d/stol-apt-repository.list
+echo "deb [trusted=yes] http://s3.amazonaws.com/stol-apt-repository ${distro} main" > /etc/apt/sources.list.d/stol-apt-repository.list
 
 apt-get update
 
@@ -20,7 +22,6 @@ DEPENDENCIES="build-essential \
     libjsoncpp-dev \
     libmysqlclient-dev \
     libmysqlcppconn-dev \
-    librdkafka-dev \
     libsnmp-dev \
     libssl-dev \
     libuv1-dev \
@@ -53,3 +54,14 @@ cd build
 cmake ..
 make -j${numCPU}
 make install
+
+# Install librdkafka from instructions provided here https://github.com/confluentinc/librdkafka/tree/master/packaging/cmake
+echo " ------> Install librdkafka..."
+cd /tmp
+git clone https://github.com/confluentinc/librdkafka.git -b v2.2.0
+cd librdkafka/
+cmake -H. -B_cmake_build
+cmake --build _cmake_build
+cmake --build _cmake_build --target install
+cd ../
+rm -r librdkafka
