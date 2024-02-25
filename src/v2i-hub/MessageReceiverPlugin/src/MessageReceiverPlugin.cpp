@@ -168,15 +168,12 @@ void MessageReceiverPlugin::OnMessageReceived(routeable_message &msg)
 
 	int msgPSID = api::msgPSID::None_PSID;
 
-	PLOG(logINFO) << "Recieved a Message";
-
 	if (msg.get_type() == "Unknown" && msg.get_subtype() == "Unknown")
 	{
-		PLOG(logINFO) << "Message type and subtype is unknown";
 		if (msg.get_encoding() == api::ENCODING_JSON_STRING)
 		{
 			// Check to see if the payload is a routable message
-			PLOG(logINFO) << "Encoding is Json";
+
 			message payloadMsg = msg.get_payload<message>();
 			if (payloadMsg.get_untyped("header.type", "Unknown") != "Unknown")
 			{
@@ -187,17 +184,14 @@ void MessageReceiverPlugin::OnMessageReceived(routeable_message &msg)
 		}
 		else if (msg.get_encoding() == api::ENCODING_BYTEARRAY_STRING)
 		{
-			PLOG(logINFO) << "Encoding is ByteArray";
 			try
 			{
 				// Check for an abbreviated message
 				byte_stream bytesFull = msg.get_payload_bytes();
 				byte_stream bytes; 
-				PLOG(logINFO) << "Got ByteStream";
 				if (bytes.size() > 8)
 				{
-					
-					PLOG(logINFO) << "Looking for abbreviated message in bytes " << bytes;
+					PLOG(logDEBUG) << "Looking for abbreviated message in bytes " << bytes;
 					uint16_t msgType;
 					uint8_t msgVersion;
 					uint16_t id;
@@ -236,16 +230,13 @@ void MessageReceiverPlugin::OnMessageReceived(routeable_message &msg)
 
 					if (dataLength > 0)
 					{
-						PLOG(logINFO) << "Checking for message type";
 						switch (msgType)
 						{
 						case ABBR_BSM:
-							PLOG(logINFO) << "Found BSM Message";
 							if (bytes.size() >= 32 && dataLength >= 24)
 							{
 								if (!simBSM && !simLoc) return;
 
-								PLOG(logINFO) << "BSM Message made";
 								//extract data
 								//vehicleId(4), heading*M(4), speed*K(4), (latitude+180)*M(4), (longitude+180)*M(4), elevation (4)
 								BsmMessage *bsm = DecodeBsm(ntohl(*((uint32_t*)&(bytes.data()[8]))),
@@ -280,7 +271,7 @@ void MessageReceiverPlugin::OnMessageReceived(routeable_message &msg)
 							if (bytes.size() >= 32 && dataLength >= 24)
 							{
 								if (!simSRM) return;
-								PLOG(logINFO) << "Found SRM message";
+
 								//extract data
 								//vehicleId(4), heading*M(4), speed*K(4), (latitude+180)*M(4), (longitude+180)*M(4), role (4)
 								SrmMessage *srm = DecodeSrm(ntohl(*((uint32_t*)&(bytes.data()[8]))),
@@ -310,7 +301,7 @@ void MessageReceiverPlugin::OnMessageReceived(routeable_message &msg)
 		}
 	}	
 
-	PLOG(logDEBUG) << "Going forward with message.";
+
 	// Make sure the timestamp matches the incoming source message
 
 	sendMsg->set_timestamp(msg.get_timestamp());
@@ -335,7 +326,7 @@ void MessageReceiverPlugin::OnMessageReceived(routeable_message &msg)
 
 	if (fwd)
 	{
-		PLOG(logINFO) << "Routing " << name << " message.";
+		PLOG(logDEBUG) << "Routing " << name << " message.";
 
 		if (routeDsrc)
 		{	
