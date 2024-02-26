@@ -160,6 +160,7 @@ SrmMessage* MessageReceiverPlugin::DecodeSrm(uint32_t vehicleId, uint32_t headin
 
 void MessageReceiverPlugin::OnMessageReceived(routeable_message &msg)
 {
+  PLOG(logINFO) << "Message Recieved";
 	routeable_message *sendMsg = &msg;
 
 	DecodedBsmMessage decodedBsm;
@@ -188,10 +189,13 @@ void MessageReceiverPlugin::OnMessageReceived(routeable_message &msg)
 			{
 				// Check for an abbreviated message
 				byte_stream bytesFull = msg.get_payload_bytes();
-				byte_stream bytes; 
-				if (bytes.size() > 8)
+				byte_stream bytes;
+        
+        PLOG(logINFO) << "Looking for abbreviated message in bytes " << bytesFull;
+        
+				if (bytesFull.size() > 8)
 				{
-					PLOG(logDEBUG) << "Looking for abbreviated message in bytes " << bytes;
+					PLOG(logDEBUG) << "Looking for abbreviated message in bytes " << bytesFull;
 					uint16_t msgType;
 					uint8_t msgVersion;
 					uint16_t id;
@@ -215,6 +219,13 @@ void MessageReceiverPlugin::OnMessageReceived(routeable_message &msg)
 							cnt++;
 
 					}
+           
+           if(bytes.size() < 32){
+           
+             PLOG(logINFO) << "Not enough if bytes";
+             return;
+           
+           }
 
 
 					msgType = ntohs(*((uint16_t*)bytes.data()));
@@ -385,7 +396,7 @@ void MessageReceiverPlugin::OnStateChange(IvpPluginState state)
 
 int MessageReceiverPlugin::Main()
 {
-	PLOG(logINFO) << "Starting plugin.";
+	PLOG(logINFO) << "Starting plugin. 2";
 
 	byte_stream incoming(4000);
 	std::unique_ptr<tmx::utils::UdpServer> server;
