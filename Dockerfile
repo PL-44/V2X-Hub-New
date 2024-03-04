@@ -39,6 +39,8 @@ RUN ./database.sh
 RUN ./library.sh
 RUN ldconfig
 
+COPY --from=dependencies /home/V2X-Hub/src/v2i-hub/build /home/V2X-Hub/v2i-hub/build/
+
 COPY --from=dependencies /usr/local/plugins/ /usr/local/plugins/
 COPY --from=dependencies /usr/local/lib/ /usr/local/lib/
 COPY --from=dependencies /usr/local/bin/ /usr/local/bin/
