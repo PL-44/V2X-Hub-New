@@ -30,7 +30,6 @@
 #include <BsmConverter.h>
 #include <LocationMessage.h>
 
-
 #include <asn_application.h>
 #include <boost/any.hpp>
 #include <tmx/TmxApiMessages.h>
@@ -38,53 +37,54 @@
 #include <tmx/messages/SaeJ2735Traits.hpp>
 #include <tmx/messages/routeable_message.hpp>
 
-
 #define UDP "UDP"
 
-//using namespace Botan; 
-namespace MessageReceiver {
+// using namespace Botan;
+namespace MessageReceiver
+{
 
-class MessageReceiverPlugin: public tmx::utils::TmxMessageManager {
-public:
-	MessageReceiverPlugin(std::string);
-	virtual ~MessageReceiverPlugin();
-	int Main();
-	void OnMessageReceived(tmx::routeable_message &msg);
-	void getmessageid();
-protected:
-	void UpdateConfigSettings();
+	class MessageReceiverPlugin : public tmx::utils::TmxMessageManager
+	{
+	public:
+		MessageReceiverPlugin(std::string);
+		virtual ~MessageReceiverPlugin();
+		int Main();
+		void OnMessageReceived(tmx::routeable_message &msg);
+		void getmessageid();
 
-	// Virtual method overrides.
-	void OnConfigChanged(const char *key, const char *value);
-	void OnStateChange(IvpPluginState state);
-private:
-	tmx::messages::BsmMessage* DecodeBsm(uint32_t vehicleId, uint32_t heading, uint32_t speed, uint32_t latitude,
-			   uint32_t longitude, uint32_t elevation, tmx::messages::DecodedBsmMessage &decodedBsm);
-	tmx::messages::SrmMessage* DecodeSrm(uint32_t vehicleId, uint32_t heading, uint32_t speed, uint32_t latitude,
-		uint32_t longitude, uint32_t role);
-	std::atomic<bool> cfgChanged { false };
-	std::string ip;
-	unsigned short port = 0;
+	protected:
+		void UpdateConfigSettings();
 
-	std::atomic<bool> routeDsrc { false };
-	std::atomic<bool> simBSM { true };
-	std::atomic<bool> simSRM { true };
-	std::atomic<bool> simLoc { true };
-	unsigned int verState;
-	std::string url; 
-	std::string baseurl;
-	std::vector<string> messageid;
-	std::string messageidstr; 
-	std::mutex syncLock;
-	tmx::utils::FrequencyThrottle<int> errThrottle;
-	tmx::utils::FrequencyThrottle<int> statThrottle;
-	uint _skippedSignVerifyErrorResponse;
-	const char* Key_SkippedSignVerifyError = "Message Skipped (Signature Verification Error Response)";
+		// Virtual method overrides.
+		void OnConfigChanged(const char *key, const char *value);
+		void OnStateChange(IvpPluginState state);
 
+	private:
+		tmx::messages::BsmMessage *DecodeBsmNew(uint32_t vehicleId, uint32_t heading, uint32_t speed, uint32_t latitude,
+												uint32_t longitude, uint32_t elevation);
+		tmx::messages::BsmMessage *DecodeBsm(uint32_t vehicleId, uint32_t heading, uint32_t speed, uint32_t latitude,
+											 uint32_t longitude, uint32_t elevation, tmx::messages::DecodedBsmMessage &decodedBsm);
+		tmx::messages::SrmMessage *DecodeSrm(uint32_t vehicleId, uint32_t heading, uint32_t speed, uint32_t latitude,
+											 uint32_t longitude, uint32_t role);
+		std::atomic<bool> cfgChanged{false};
+		std::string ip;
+		unsigned short port = 0;
 
-	
-
-};
+		std::atomic<bool> routeDsrc{false};
+		std::atomic<bool> simBSM{true};
+		std::atomic<bool> simSRM{true};
+		std::atomic<bool> simLoc{true};
+		unsigned int verState;
+		std::string url;
+		std::string baseurl;
+		std::vector<string> messageid;
+		std::string messageidstr;
+		std::mutex syncLock;
+		tmx::utils::FrequencyThrottle<int> errThrottle;
+		tmx::utils::FrequencyThrottle<int> statThrottle;
+		uint _skippedSignVerifyErrorResponse;
+		const char *Key_SkippedSignVerifyError = "Message Skipped (Signature Verification Error Response)";
+	};
 
 } /* namespace MessageReceiver */
 
