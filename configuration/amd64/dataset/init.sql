@@ -13,8 +13,10 @@ CREATE TABLE During
 (
     roadSegmentId int,
     timePeriod timestamp,
-    avgSpeed int NOT NULL,
-    throughput int NOT NULL,
+    numCars int NOT NULL,
+    postedSpeed bigint NOT NULL,
+    avgSpeed bigint NOT NULL,
+    throughput bigint NOT NULL,
     PRIMARY KEY(roadSegmentId, timePeriod),
     FOREIGN KEY(roadSegmentId) references RoadSegments(id),
     FOREIGN KEY(timePeriod) references RoadTime(timePeriod)
@@ -28,6 +30,6 @@ INSERT INTO RoadTime(timePeriod)
 VALUES
 ('2024-03-05 14:34:00');
 
-INSERT INTO During(roadSegmentId, timePeriod, avgSpeed, throughput)
+INSERT INTO During(roadSegmentId, timePeriod, numCars, postedSpeed, avgSpeed, throughput)
 VALUES
-(1, '2024-03-05 14:34:00', 27, 5);
+(1, '2024-03-05 14:34:00', 5, 30, 27, 5);

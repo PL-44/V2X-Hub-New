@@ -12,6 +12,7 @@
 #include <atomic>
 #include <thread>
 #include <DecodedBsmMessage.h>
+#include <DatabaseMessage.h>
 #include <tmx/j2735_messages/MapDataMessage.hpp>
 #include <pqxx/pqxx>
 
@@ -196,8 +197,57 @@ void DatabasePlugin::HandleDatabaseMessage(DatabaseMessage &msg, routeable_messa
 
 	// Push to database
 
+	try {
+        // Connection parameters
+        const std::string host = "127.0.1.1";
+        const std::string port = "5488";
+        const std::string dbname = "my_data_wh_db";
+        const std::string user = "my_data_wh_user";
+        const std::string password = "my_data_wh_pwd";
+
+        // Construct the connection string
+        std::string conn_string = "host=" + host + " port=" + port + " dbname=" + dbname +
+                                  " user=" + user + " password=" + password;
+
+        // Establish a connection
+        pqxx::connection conn(conn_string);
+
+        if (conn.is_open()) {
+            // Create a transaction
+            pqxx::work txn(conn);
+
+            try {
+                // Perform an INSERT operation
+				// Perform an INSERT operation
+				const std::string initial_insert_string = "INSERT INTO During (roadSegmentId, timePeriod, numCars, postedSpeed, avgSpeed, throughput) VALUES (1, ";
+				const std::string timestamp_string = "timestamp(" + std::to_string(timestamp) + "), ";
+				const std::string number_cars_string = std::to_string(number_of_vehicles_in_road_segment);
+				const std::string posted_speed_string = std::to_string(speed_limit_of_road_segment);
+				const std::string avg_speed_string = std::to_string(average_speed_of_vehicles_in_road_segment);
+				const std::string throughput_string = std::to_string(throughput_of_road_segment);
+
+				txn.exec(initial_insert_string + timestamp_string + number_cars_string + ", " + posted_speed_string + ", " + avg_speed_string + ", " + throughput_string);
 
 
+                // Commit the transaction
+                txn.commit();
+
+                std::cout << "Data inserted successfully." << std::endl;
+            } catch (const std::exception &e) {
+                // Rollback the transaction in case of an error
+                txn.abort();
+                throw;
+            }
+        } else {
+            std::cout << "Failed to open database" << std::endl;
+        }
+        
+
+        // Close the connection when done
+        conn.disconnect();
+    } catch (const std::exception &e) {
+        std::cerr << "Error: " << e.what() << std::endl;
+    }
 }
 
 
