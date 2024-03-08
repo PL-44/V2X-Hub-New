@@ -130,7 +130,7 @@ void PhantomTrafficPlugin::HandleBasicSafetyMessage(BsmMessage &msg, routeable_m
 	// Decode the BSM message
 	std::shared_ptr<BasicSafetyMessage> bsm_shared = msg.get_j2735_data();
 	BasicSafetyMessage* bsm = bsm_shared.get();
-	// PLOG(logDEBUG) << "Received Decoded BSM: " << bsm->coreData;
+	PLOG(logDEBUG) << "Received BSM Message: ";
 
 	// Determine if location, speed, and heading are valid.
 	// bool isValid = bsm->coreData.get_IsLocationValid() && bsm->coreData.get_IsSpeedValid() && bsm->coreData.get_IsHeadingValid();
@@ -150,19 +150,22 @@ void PhantomTrafficPlugin::HandleBasicSafetyMessage(BsmMessage &msg, routeable_m
 	// Coordinates of slowdown region
 	// Longitude = east-west (increases towards east,more negative towards west)
 	// Latitude = south-north (increases north, more negative towards south)
-	double top_left_long; // top left corner 
-	double top_left_lat; // top left corner
-	double top_right_long; // top right corner
-	double top_right_lat; // top right corner
-	double bottom_left_long; // bottom left corner
-	double bottom_left_lat; // bottom left corner
-	double bottom_right_long; // bottom right corner
-	double bottom_right_lat; // bottom right corner
+	// double top_left_long; // top left corner 
+	// double top_left_lat; // top left corner
+	// double top_right_long; // top right corner
+	// double top_right_lat; // top right corner
+	// double bottom_left_long; // bottom left corner
+	// double bottom_left_lat; // bottom left corner
+	// double bottom_right_long; // bottom right corner
+	// double bottom_right_lat; // bottom right corner
 
 
 	// Coordinates of the vehicle
 	double vehicle_long = bsm->coreData.Long;
 	double vehicle_lat = bsm->coreData.lat;
+
+	double long_start = -123.17995692947078;
+	double long_end = -123.170;
 
 	// Vehicle ID
 	int32_t vehicle_id;
@@ -173,8 +176,9 @@ void PhantomTrafficPlugin::HandleBasicSafetyMessage(BsmMessage &msg, routeable_m
 	
 
 	// Check if the vehicle is in the slowdown region.
-	if (vehicle_long >= top_left_long && vehicle_long <= top_right_long && vehicle_lat >= bottom_left_lat && vehicle_lat <= top_left_lat)
+	if (vehicle_long >= long_start && vehicle_long <= long_end)
 	{
+		PLOG(logDEBUG) << "Vehicle ID " << vehicle_id << " is in the slowdown region.";
 		// Add the vehicle to the list of vehicles being tracked if it's not already tracked
 		if (find(vehicle_ids.begin(), vehicle_ids.end(), vehicle_id) == vehicle_ids.end())
 		{
@@ -190,7 +194,8 @@ void PhantomTrafficPlugin::HandleBasicSafetyMessage(BsmMessage &msg, routeable_m
 		average_speed = (average_speed * (vehicle_count - 1) + bsm->coreData.speed) / vehicle_count;
 	}
 	else // Vehicle is not in the slowdown region
-	{
+	{	
+		PLOG(logDEBUG) << "Vehicle ID " << vehicle_id << " is NOT in the slowdown region.";
 		// Remove the vehicle from the list of vehicles being tracked if it's being tracked
 		if (find(vehicle_ids.begin(), vehicle_ids.end(), vehicle_id) != vehicle_ids.end())
 		{
