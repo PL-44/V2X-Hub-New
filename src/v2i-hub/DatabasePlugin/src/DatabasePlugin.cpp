@@ -40,10 +40,9 @@ protected:
 	void OnConfigChanged(const char *key, const char *value);
 	void OnStateChange(IvpPluginState state);
 
-	void HandleDecodedBsmMessage(DecodedBsmMessage &msg, routeable_message &routeableMsg);
 	void HandleDataChangeMessage(DataChangeMessage &msg, routeable_message &routeableMsg);
-	void DummyInsertion();
 	void HandleDatabaseMessage(DatabaseMessage &msg, routeable_message &routeableMsg);
+	void InsertDatabaseMessage(uint64_t timestamp, int number_of_vehicles_in_road_segment, double average_speed_of_vehicles_in_road_segment, double speed_limit_of_road_segment, double throughput_of_road_segment);
 private:
 	std::atomic<uint64_t> _frequency{0};
 	DATA_MONITOR(_frequency);   // Declares the
@@ -58,9 +57,6 @@ DatabasePlugin::DatabasePlugin(string name): PluginClient(name)
 {
 	// The log level can be changed from the default here.
 	FILELog::ReportingLevel() = FILELog::FromString("DEBUG");
-
-	// Add a message filter and handler for each message this plugin wants to receive.
-	AddMessageFilter<DecodedBsmMessage>(this, &DatabasePlugin::HandleDecodedBsmMessage);
 
 	// This is an internal message type that is used to track some plugin data that changes
 	AddMessageFilter<DataChangeMessage>(this, &DatabasePlugin::HandleDataChangeMessage);
@@ -107,11 +103,6 @@ void DatabasePlugin::OnStateChange(IvpPluginState state)
 	}
 }
 
-void DatabasePlugin::HandleDecodedBsmMessage(DecodedBsmMessage &msg, routeable_message &routeableMsg)
-{
-	DummyInsertion();	
-}
-
 
 // Example of handling
 void DatabasePlugin::HandleDataChangeMessage(DataChangeMessage &msg, routeable_message &routeableMsg)
@@ -121,52 +112,6 @@ void DatabasePlugin::HandleDataChangeMessage(DataChangeMessage &msg, routeable_m
 	PLOG(logINFO) << "Data field " << msg.get_untyped(msg.Name, "?") <<
 			" has changed from " << msg.get_untyped(msg.OldValue, "?") <<
 			" to " << msg.get_untyped(msg.NewValue, to_string(_frequency));
-}
-
-void DatabasePlugin::DummyInsertion() 
-{
-	try {
-        // Connection parameters
-        const std::string host = "127.0.1.1";
-        const std::string port = "5488";
-        const std::string dbname = "my_data_wh_db";
-        const std::string user = "my_data_wh_user";
-        const std::string password = "my_data_wh_pwd";
-
-        // Construct the connection string
-        std::string conn_string = "host=" + host + " port=" + port + " dbname=" + dbname +
-                                  " user=" + user + " password=" + password;
-
-        // Establish a connection
-        pqxx::connection conn(conn_string);
-
-        if (conn.is_open()) {
-            // Create a transaction
-            pqxx::work txn(conn);
-
-            try {
-                // Perform an INSERT operation
-                txn.exec("INSERT INTO t_oil (region, country, year, production, consumption) VALUES ('TEST', 'TEST', 2021, 100, 100)");
-
-                // Commit the transaction
-                txn.commit();
-
-                std::cout << "Data inserted successfully." << std::endl;
-            } catch (const std::exception &e) {
-                // Rollback the transaction in case of an error
-                txn.abort();
-                throw;
-            }
-        } else {
-            std::cout << "Failed to open database" << std::endl;
-        }
-        
-
-        // Close the connection when done
-        conn.disconnect();
-    } catch (const std::exception &e) {
-        std::cerr << "Error: " << e.what() << std::endl;
-    }
 }
 
 /* 
@@ -196,7 +141,11 @@ void DatabasePlugin::HandleDatabaseMessage(DatabaseMessage &msg, routeable_messa
 	double throughput_of_road_segment = msg.get_ThroughputOfRoadSegment();
 
 	// Push to database
+	InsertDatabaseMessage(timestamp, number_of_vehicles_in_road_segment, average_speed_of_vehicles_in_road_segment, speed_limit_of_road_segment, throughput_of_road_segment);
+}
 
+void DatabasePlugin::InsertDatabaseMessage(uint64_t timestamp, int number_of_vehicles_in_road_segment, double average_speed_of_vehicles_in_road_segment, double speed_limit_of_road_segment, double throughput_of_road_segment)
+{
 	try {
         // Connection parameters
         const std::string host = "127.0.1.1";
@@ -218,38 +167,37 @@ void DatabasePlugin::HandleDatabaseMessage(DatabaseMessage &msg, routeable_messa
 
             try {
                 // Perform an INSERT operation
-				// Perform an INSERT operation
 				const std::string initial_insert_string = "INSERT INTO During (roadSegmentId, timePeriod, numCars, postedSpeed, avgSpeed, throughput) VALUES (1, ";
-				const std::string timestamp_string = "timestamp(" + std::to_string(timestamp) + "), ";
+				const std::string timestamp_string = "to_timestamp(" + std::to_string(timestamp) + "/1000)";
 				const std::string number_cars_string = std::to_string(number_of_vehicles_in_road_segment);
 				const std::string posted_speed_string = std::to_string(speed_limit_of_road_segment);
 				const std::string avg_speed_string = std::to_string(average_speed_of_vehicles_in_road_segment);
 				const std::string throughput_string = std::to_string(throughput_of_road_segment);
 
-				txn.exec(initial_insert_string + timestamp_string + number_cars_string + ", " + posted_speed_string + ", " + avg_speed_string + ", " + throughput_string);
+				txn.exec("INSERT INTO RoadTime VALUES(" + timestamp_string + ")");
+				txn.exec(initial_insert_string + timestamp_string + ", " + number_cars_string + ", " + posted_speed_string + ", " + avg_speed_string + ", " + throughput_string + ")");
 
 
                 // Commit the transaction
                 txn.commit();
 
-                std::cout << "Data inserted successfully." << std::endl;
+                PLOG(logINFO) << "Data inserted successfully.";
             } catch (const std::exception &e) {
                 // Rollback the transaction in case of an error
                 txn.abort();
                 throw;
             }
         } else {
-            std::cout << "Failed to open database" << std::endl;
+            PLOG(logERROR) << "Failed to open database";
         }
         
 
         // Close the connection when done
         conn.disconnect();
     } catch (const std::exception &e) {
-        std::cerr << "Error: " << e.what() << std::endl;
+        PLOG(logINFO) << "Error"  << e.what();
     }
 }
-
 
 // Override of main method of the plugin that should not return until the plugin exits.
 // This method does not need to be overridden if the plugin does not want to use the main thread.
@@ -258,7 +206,8 @@ int DatabasePlugin::Main()
 	PLOG(logINFO) << "Starting plugin.";
 
 	uint msCount = 0;
-	DummyInsertion();
+	InsertDatabaseMessage(1709871240197, 7, 31, 50, 6);
+
 	while (_plugin->state != IvpPluginState_error)
 	{
 		PLOG(logDEBUG4) << "Sleeping 1 ms" << endl;
