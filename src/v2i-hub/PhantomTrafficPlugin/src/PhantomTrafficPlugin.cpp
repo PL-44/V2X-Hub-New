@@ -267,11 +267,11 @@ namespace PhantomTrafficPlugin
 
 				//  Create auto message to send to the Database Plugin
 				auto_message auto_db_message;
-				auto_db_message.auto_attribute<DatabaseMessage>(db_msg.get_Timestamp(), "Timestamp");
-				auto_db_message.auto_attribute<DatabaseMessage>(db_msg.get_NumberOfVehiclesInRoadSegment(), "NumberOfVehiclesInRoadSegment");
-				auto_db_message.auto_attribute<DatabaseMessage>(db_msg.get_AverageSpeedOfVehiclesInRoadSegment(), "AverageSpeedOfVehiclesInRoadSegment");
-				auto_db_message.auto_attribute<DatabaseMessage>(db_msg.get_SpeedLimitOfRoadSegment(), "SpeedLimitOfRoadSegment");
-				auto_db_message.auto_attribute<DatabaseMessage>(db_msg.get_ThroughputOfRoadSegment(), "ThroughputOfRoadSegment");
+				auto_db_message.auto_attribute<DatabaseMessage>((long unsigned int) db_msg.get_Timestamp(), "Timestamp");
+				auto_db_message.auto_attribute<DatabaseMessage>((int) db_msg.get_NumberOfVehiclesInRoadSegment(), "NumberOfVehiclesInRoadSegment");
+				auto_db_message.auto_attribute<DatabaseMessage>((double) db_msg.get_AverageSpeedOfVehiclesInRoadSegment(), "AverageSpeedOfVehiclesInRoadSegment");
+				auto_db_message.auto_attribute<DatabaseMessage>((double) db_msg.get_SpeedLimitOfRoadSegment(), "SpeedLimitOfRoadSegment");
+				auto_db_message.auto_attribute<DatabaseMessage>((double) db_msg.get_ThroughputOfRoadSegment(), "ThroughputOfRoadSegment");
 
 				PLOG(logDEBUG) << "Database Auto Message created: " << auto_db_message <<endl;
 
