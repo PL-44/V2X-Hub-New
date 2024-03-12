@@ -263,18 +263,24 @@ namespace PhantomTrafficPlugin
 				double throughput = vehicle_count / MSG_INTERVAL; // throughput = vehicle count / message interval
 				DatabaseMessage db_msg = DatabaseMessage(Clock::GetMillisecondsSinceEpoch(), vehicle_count, average_speed, new_speed, throughput);
 
+				//  Create auto message to send to the Database Plugin
+				auto_message auto_db_message;
+				auto_db_message.auto_attribute<DatabaseMessage>(db_msg.get_Timestamp(), "Timestamp");
+				auto_db_message.auto_attribute<DatabaseMessage>(db_msg.get_NumberOfVehiclesInRoadSegment(), "NumberOfVehiclesInRoadSegment");
+				auto_db_message.auto_attribute<DatabaseMessage>(db_msg.get_AverageSpeedOfVehiclesInRoadSegment(), "AverageSpeedOfVehiclesInRoadSegment");
+				auto_db_message.auto_attribute<DatabaseMessage>(db_msg.get_SpeedLimitOfRoadSegment(), "SpeedLimitOfRoadSegment");
+				auto_db_message.auto_attribute<DatabaseMessage>(db_msg.get_ThroughputOfRoadSegment(), "ThroughputOfRoadSegment");
+
+				PLOG(logDEBUG) << "Database Auto Message created: " << auto_db_message <<endl;
+
 				// Refer: Plugin Programming Guide Page 13 for dynamic cast
-				routeable_message *rMsg = dynamic_cast<routeable_message *>(&db_msg);
-				if (rMsg)
-				{
-					BroadcastMessage(*rMsg);
-					// Log
-					PLOG(logDEBUG) << "Database Message sent to Database Plugin";
-				}
-				else
-				{
-					PLOG(logERROR) << "Failed to cast Database Message to routeable_message.";
-				}
+				routeable_message rMsg;
+				rMsg.set_type("Internal");
+				rMsg.set_subtype("DatabaseMessage");
+				rMsg.set_payload(auto_db_message); // json encoding
+				BroadcastMessage(rMsg);
+				
+				PLOG(logDEBUG) << "Routeable DB Message sent" <<endl;
 
 				// Send updated speed limit to simulation using UDP at port 4500
 				// Create string of just new speed limit
