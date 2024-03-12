@@ -28,8 +28,12 @@ VALUES
 
 INSERT INTO RoadTime(timePeriod) 
 VALUES
-('2024-03-05 14:34:00');
+('2024-03-05 14:34:00'),
+('2024-03-05 14:34:05'),
+('2024-03-05 14:34:10');
 
 INSERT INTO During(roadSegmentId, timePeriod, numCars, postedSpeed, avgSpeed, throughput)
 VALUES
-(1, '2024-03-05 14:34:00', 5, 30, 27, 5);
+(1, '2024-03-05 14:34:00', 5, 30, 27, 5),
+(1, '2024-03-05 14:34:05', 6, 30, 28, 7),
+(1, '2024-03-05 14:34:10', 6, 30, 29, 6);
