@@ -81,22 +81,22 @@ namespace MessageReceiver
 		 */
 
 		char *my_str = (char *)"sender_id";
-		uint8_t *my_bytes = reinterpret_cast<uint8_t *>(my_str);
+		uint8_t *my_bytes = reinterpret_cast<uint8_t *>(&vehicleId);
 		message->coreData.msgCnt = 1;
 		uint8_t my_bytes_id[4] = {(uint8_t)1, (uint8_t)12, (uint8_t)12, (uint8_t)10};
 
 		char buf[4];
-		memcpy(buf, my_bytes_id, 4);
+		memcpy(buf, my_bytes, 4);
 		OCTET_STRING_fromBuf(&message->coreData.id, buf, 4);
 
 		// message->coreData.id.buf = my_bytes_id;
 		message->coreData.id.size = sizeof(my_bytes_id);
 		message->coreData.secMark = 1023;
-		message->coreData.lat = 38954961;
-		message->coreData.Long = -77149303;
+		message->coreData.lat = (Latitude_t)latitude;
+		message->coreData.Long = (Longitude_t)longitude;
 		message->coreData.elev = 72;
-		message->coreData.speed = 100;
-		message->coreData.heading = 12;
+		message->coreData.speed = 0;
+		message->coreData.heading = 0;
 		message->coreData.angle = 10;
 		message->coreData.transmission = 0; // allow 0...7
 

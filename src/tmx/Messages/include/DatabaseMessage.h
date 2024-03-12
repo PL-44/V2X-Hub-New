@@ -12,6 +12,7 @@
 	#include <tmx/messages/message.hpp>
 	#include <tmx/TmxApiMessages.h>
 	#include "MessageTypes.h"
+	#include <tmx/messages/routeable_message.hpp>
 #else
 	#include <tmx/messages/faux_message.hpp>
 #endif
