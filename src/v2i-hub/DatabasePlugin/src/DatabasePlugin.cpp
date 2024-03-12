@@ -180,25 +180,27 @@ void EmptyPlugin::OnMessageReceived(IvpMessage *msg) {
 	routeable_message routeableMsg(msg);
 
 	auto_message recv_msg;
-	recv_msg.set_contents(routeableMsg.get_payload_str())
+	recv_msg.set_contents(routeableMsg.get_payload_str());
 
 	// Parse the message and push to database
 	// Get Fields from the message
+	// Second parameter is the default value
+	// -1 if unknown int or double
 
 	// Timestamp
-	uint64_t timestamp = recv_msg.get<uint64_t>("Timestamp", "Unknown");
+	uint64_t timestamp = recv_msg.get<uint64_t>("Timestamp", "UnknownTime");
 
 	// Number of vehicles in road segment
-	int number_of_vehicles_in_road_segment = recv_msg.get<int>("NumberOfVehiclesInRoadSegment", "Unknown");
+	int number_of_vehicles_in_road_segment = recv_msg.get<int>("NumberOfVehiclesInRoadSegment", -1);
 
 	// Average speed of vehicles in road segment
-	double average_speed_of_vehicles_in_road_segment = recv_msg.get<double>("AverageSpeedOfVehiclesInRoadSegment", "Unknown");
+	double average_speed_of_vehicles_in_road_segment = recv_msg.get<double>("AverageSpeedOfVehiclesInRoadSegment", -1.);
 
 	// Speed limit of road segment
-	double speed_limit_of_road_segment = recv_msg.get<double>("SpeedLimitOfRoadSegment", "Unknown");
+	double speed_limit_of_road_segment = recv_msg.get<double>("SpeedLimitOfRoadSegment", -1.);
 
 	// Throughput of road segment
-	double throughput_of_road_segment = recv_msg.get<double>("ThroughputOfRoadSegment", "Unknown");
+	double throughput_of_road_segment = recv_msg.get<double>("ThroughputOfRoadSegment", -1.);
 
 	PLOG(logDEBUG) << "Got data: " << timestamp << " " << number_of_vehicles_in_road_segment << " " << average_speed_of_vehicles_in_road_segment << " " << speed_limit_of_road_segment << " " << throughput_of_road_segment << endl;
 
