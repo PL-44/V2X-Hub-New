@@ -175,7 +175,7 @@ void DatabasePlugin::DummyInsertion()
 
 void DatabasePlugin::OnMessageReceived(IvpMessage *msg) {
 
-	PLOG(logDEBUG) << received IVP message in DB plugin << endl;
+	PLOG(logDEBUG) << "received IVP message in DB plugin" << endl;
 
 	routeable_message routeableMsg(msg);
 
