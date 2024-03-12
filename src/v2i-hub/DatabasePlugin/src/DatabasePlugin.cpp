@@ -173,7 +173,7 @@ void DatabasePlugin::DummyInsertion()
     }
 }
 
-void EmptyPlugin::OnMessageReceived(IvpMessage *msg) {
+void DatabasePlugin::OnMessageReceived(IvpMessage *msg) {
 
 	PLOG(logDEBUG) << received IVP message in DB plugin << endl;
 
@@ -188,7 +188,7 @@ void EmptyPlugin::OnMessageReceived(IvpMessage *msg) {
 	// -1 if unknown int or double
 
 	// Timestamp
-	uint64_t timestamp = recv_msg.get<uint64_t>("Timestamp", "UnknownTime");
+	uint64_t timestamp = recv_msg.get<uint64_t>("Timestamp", -1);
 
 	// Number of vehicles in road segment
 	int number_of_vehicles_in_road_segment = recv_msg.get<int>("NumberOfVehiclesInRoadSegment", -1);
