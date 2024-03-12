@@ -57,10 +57,10 @@ namespace PhantomTrafficPlugin
 	private:
 		std::atomic<uint64_t> _frequency{0};
 		DATA_MONITOR(_frequency);					  // Declares the
-		std::atomic<uint64_t> vehicle_count;		  // vehicle count in the slowdown region
+		uint64_t vehicle_count;		  // vehicle count in the slowdown region
 		vector<int32_t> vehicle_ids;				  // vehicle IDs in the slowdown region
 		std::mutex vehicle_ids_mutex;				  // mutex for vehicle IDs
-		std::atomic<double> average_speed;			  // average speed of vehicles in the slowdown region
+		double average_speed;			  // average speed of vehicles in the slowdown region
 		tmx::utils::UdpClient *_signSimClient = NULL; // UDP client for sending speed limit to simulation
 	};
 
