@@ -17,6 +17,8 @@
 #include "Clock.h"
 #include <tmx/j2735_messages/BasicSafetyMessage.hpp>
 #include <BasicSafetyMessage.h>
+#include <tmx/messages/auto_message.hpp>
+#include <tmx/messages/routeable_message.hpp>
 
 using namespace std;
 using namespace tmx;
