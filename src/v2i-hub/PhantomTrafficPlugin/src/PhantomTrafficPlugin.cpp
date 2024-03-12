@@ -1,9 +1,9 @@
 //==========================================================================
 // Name        : PhantomTrafficPlugin.cpp
-// Author      : Battelle Memorial Institute
-// Version     :
+// Author      : PL-44 Capstone Team, UBC Vancouver
+// Version     : 1.0
 // Copyright   : Copyright (c) 2014 Battelle Memorial Institute. All rights reserved.
-// Description : Example Plugin
+// Description : Phantom Traffic Plugin
 //==========================================================================
 
 #include "PluginClient.h"

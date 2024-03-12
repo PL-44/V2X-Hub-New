@@ -2,7 +2,7 @@
  * DatabaseMessage.h
  *
  *  Created on: February 27, 2024
- *      Author: Ishan Joshi
+ *      Author: PL-44 Capstone Team, UBC Vancouver
  */
 
 #ifndef INCLUDE_DATABASEMESSAGE_H_
