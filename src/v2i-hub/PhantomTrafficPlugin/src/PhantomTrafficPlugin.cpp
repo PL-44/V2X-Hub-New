@@ -17,6 +17,8 @@
 #include "Clock.h"
 #include <tmx/j2735_messages/BasicSafetyMessage.hpp>
 #include <BasicSafetyMessage.h>
+#include <tmx/messages/auto_message.hpp>
+#include <tmx/messages/routeable_message.hpp>
 
 using namespace std;
 using namespace tmx;
@@ -55,10 +57,10 @@ namespace PhantomTrafficPlugin
 	private:
 		std::atomic<uint64_t> _frequency{0};
 		DATA_MONITOR(_frequency);					  // Declares the
-		std::atomic<uint64_t> vehicle_count;		  // vehicle count in the slowdown region
+		uint64_t vehicle_count;		  // vehicle count in the slowdown region
 		vector<int32_t> vehicle_ids;				  // vehicle IDs in the slowdown region
 		std::mutex vehicle_ids_mutex;				  // mutex for vehicle IDs
-		std::atomic<double> average_speed;			  // average speed of vehicles in the slowdown region
+		double average_speed;			  // average speed of vehicles in the slowdown region
 		tmx::utils::UdpClient *_signSimClient = NULL; // UDP client for sending speed limit to simulation
 	};
 
@@ -261,20 +263,27 @@ namespace PhantomTrafficPlugin
 
 				// Create Database Message to send to the Database Plugin
 				double throughput = vehicle_count / MSG_INTERVAL; // throughput = vehicle count / message interval
-				DatabaseMessage db_msg = DatabaseMessage(Clock::GetMillisecondsSinceEpoch(), vehicle_count, average_speed, new_speed, throughput);
+				uint64_t timestamp = Clock::GetMillisecondsSinceEpoch();
+				// DatabaseMessage db_msg = DatabaseMessage(timestamp, vehicle_count, average_speed, new_speed, throughput);
+
+				//  Create auto message to send to the Database Plugin
+				auto_message auto_db_message;
+				auto_db_message.auto_attribute<DatabaseMessage>(timestamp, "Timestamp");
+				auto_db_message.auto_attribute<DatabaseMessage>(vehicle_count, "NumberOfVehiclesInRoadSegment");
+				auto_db_message.auto_attribute<DatabaseMessage>(average_speed, "AverageSpeedOfVehiclesInRoadSegment");
+				auto_db_message.auto_attribute<DatabaseMessage>(new_speed, "SpeedLimitOfRoadSegment");
+				auto_db_message.auto_attribute<DatabaseMessage>(throughput, "ThroughputOfRoadSegment");
+
+				PLOG(logDEBUG) << "Database Auto Message created: " << auto_db_message <<endl;
 
 				// Refer: Plugin Programming Guide Page 13 for dynamic cast
-				routeable_message *rMsg = dynamic_cast<routeable_message *>(&db_msg);
-				if (rMsg)
-				{
-					BroadcastMessage(*rMsg);
-					// Log
-					PLOG(logDEBUG) << "Database Message sent to Database Plugin";
-				}
-				else
-				{
-					PLOG(logERROR) << "Failed to cast Database Message to routeable_message.";
-				}
+				routeable_message rMsg;
+				rMsg.set_type("Internal");
+				rMsg.set_subtype("DatabaseMessage");
+				rMsg.set_payload(auto_db_message); // json encoding
+				BroadcastMessage(rMsg);
+				
+				PLOG(logDEBUG) << "Routeable DB Message sent" <<endl;
 
 				// Send updated speed limit to simulation using UDP at port 4500
 				// Create string of just new speed limit
