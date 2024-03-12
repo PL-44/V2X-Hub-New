@@ -263,15 +263,16 @@ namespace PhantomTrafficPlugin
 
 				// Create Database Message to send to the Database Plugin
 				double throughput = vehicle_count / MSG_INTERVAL; // throughput = vehicle count / message interval
-				DatabaseMessage db_msg = DatabaseMessage(Clock::GetMillisecondsSinceEpoch(), vehicle_count, average_speed, new_speed, throughput);
+				uint64_t timestamp = Clock::GetMillisecondsSinceEpoch();
+				// DatabaseMessage db_msg = DatabaseMessage(timestamp, vehicle_count, average_speed, new_speed, throughput);
 
 				//  Create auto message to send to the Database Plugin
 				auto_message auto_db_message;
-				auto_db_message.auto_attribute<DatabaseMessage>((long unsigned int) db_msg.get_Timestamp(), "Timestamp");
-				auto_db_message.auto_attribute<DatabaseMessage>((int) db_msg.get_NumberOfVehiclesInRoadSegment(), "NumberOfVehiclesInRoadSegment");
-				auto_db_message.auto_attribute<DatabaseMessage>((double) db_msg.get_AverageSpeedOfVehiclesInRoadSegment(), "AverageSpeedOfVehiclesInRoadSegment");
-				auto_db_message.auto_attribute<DatabaseMessage>((double) db_msg.get_SpeedLimitOfRoadSegment(), "SpeedLimitOfRoadSegment");
-				auto_db_message.auto_attribute<DatabaseMessage>((double) db_msg.get_ThroughputOfRoadSegment(), "ThroughputOfRoadSegment");
+				auto_db_message.auto_attribute<DatabaseMessage>(timestamp, "Timestamp");
+				auto_db_message.auto_attribute<DatabaseMessage>(vehicle_count, "NumberOfVehiclesInRoadSegment");
+				auto_db_message.auto_attribute<DatabaseMessage>(average_speed, "AverageSpeedOfVehiclesInRoadSegment");
+				auto_db_message.auto_attribute<DatabaseMessage>(new_speed, "SpeedLimitOfRoadSegment");
+				auto_db_message.auto_attribute<DatabaseMessage>(throughput, "ThroughputOfRoadSegment");
 
 				PLOG(logDEBUG) << "Database Auto Message created: " << auto_db_message <<endl;
 
