@@ -281,7 +281,7 @@ namespace PhantomTrafficPlugin
 				rMsg.set_type("Internal");
 				rMsg.set_subtype("DatabaseMessage");
 				rMsg.set_payload(auto_db_message); // json encoding
-				BroadcastMessage(rMsg);
+				this->BroadcastMessage(rMsg);
 				
 				PLOG(logDEBUG) << "Routeable DB Message sent" <<endl;
 
