@@ -15,6 +15,8 @@
 #include <DatabaseMessage.h>
 #include <tmx/j2735_messages/MapDataMessage.hpp>
 #include <pqxx/pqxx>
+#include <tmx/messages/auto_message.hpp>
+#include <tmx/messages/routeable_message.hpp>
 
 using namespace std;
 using namespace tmx;
@@ -43,6 +45,8 @@ protected:
 	void HandleDataChangeMessage(DataChangeMessage &msg, routeable_message &routeableMsg);
 	void HandleDatabaseMessage(DatabaseMessage &msg, routeable_message &routeableMsg);
 	void InsertDatabaseMessage(uint64_t timestamp, int number_of_vehicles_in_road_segment, double average_speed_of_vehicles_in_road_segment, double speed_limit_of_road_segment, double throughput_of_road_segment);
+	// void HandleDatabaseMessage(DatabaseMessage &msg, routeable_message &routeableMsg);
+	void OnMessageReceived(IvpMessage *msg);
 private:
 	std::atomic<uint64_t> _frequency{0};
 	DATA_MONITOR(_frequency);   // Declares the
@@ -62,7 +66,8 @@ DatabasePlugin::DatabasePlugin(string name): PluginClient(name)
 	AddMessageFilter<DataChangeMessage>(this, &DatabasePlugin::HandleDataChangeMessage);
 
 	// This is an internal message type that is used to send PhantomTrafficPlugin data to the database
-	AddMessageFilter<DatabaseMessage>(this, &DatabasePlugin::HandleDatabaseMessage);
+	// AddMessageFilter<DatabaseMessage>(this, &DatabasePlugin::HandleDatabaseMessage);
+	AddMessageFilter("Internal", "DatabaseMessage");
 
 	// Subscribe to all messages specified by the filters above.
 	SubscribeToMessages();
@@ -114,31 +119,37 @@ void DatabasePlugin::HandleDataChangeMessage(DataChangeMessage &msg, routeable_m
 			" to " << msg.get_untyped(msg.NewValue, to_string(_frequency));
 }
 
-/* 
- * Handle Incoming Database Message 
- * Parse data here and push to database using libcq++ function.
- */
-void DatabasePlugin::HandleDatabaseMessage(DatabaseMessage &msg, routeable_message &routeableMsg)
-{
-	PLOG(logINFO) << "Received a database message: " << msg;
+
+void DatabasePlugin::OnMessageReceived(IvpMessage *msg) {
+
+	PLOG(logDEBUG) << "received IVP message in DB plugin" << endl;
+
+	routeable_message routeableMsg(msg);
+
+	auto_message recv_msg;
+	recv_msg.set_contents(routeableMsg.get_payload_str());
 
 	// Parse the message and push to database
 	// Get Fields from the message
+	// Second parameter is the default value
+	// -1 if unknown int or double
 
 	// Timestamp
-	uint64_t timestamp = msg.get_Timestamp();
+	uint64_t timestamp = recv_msg.get<uint64_t>("Timestamp", -1);
 
 	// Number of vehicles in road segment
-	int number_of_vehicles_in_road_segment = msg.get_NumberOfVehiclesInRoadSegment();
+	int number_of_vehicles_in_road_segment = recv_msg.get<int>("NumberOfVehiclesInRoadSegment", -1);
 
 	// Average speed of vehicles in road segment
-	double average_speed_of_vehicles_in_road_segment = msg.get_AverageSpeedOfVehiclesInRoadSegment();
+	double average_speed_of_vehicles_in_road_segment = recv_msg.get<double>("AverageSpeedOfVehiclesInRoadSegment", -1.);
 
 	// Speed limit of road segment
-	double speed_limit_of_road_segment = msg.get_SpeedLimitOfRoadSegment();
+	double speed_limit_of_road_segment = recv_msg.get<double>("SpeedLimitOfRoadSegment", -1.);
 
 	// Throughput of road segment
-	double throughput_of_road_segment = msg.get_ThroughputOfRoadSegment();
+	double throughput_of_road_segment = recv_msg.get<double>("ThroughputOfRoadSegment", -1.);
+
+	PLOG(logDEBUG) << "Got data: " << timestamp << " " << number_of_vehicles_in_road_segment << " " << average_speed_of_vehicles_in_road_segment << " " << speed_limit_of_road_segment << " " << throughput_of_road_segment << endl;
 
 	// Push to database
 	InsertDatabaseMessage(timestamp, number_of_vehicles_in_road_segment, average_speed_of_vehicles_in_road_segment, speed_limit_of_road_segment, throughput_of_road_segment);

@@ -2,7 +2,7 @@
  * DatabaseMessage.h
  *
  *  Created on: February 27, 2024
- *      Author: Ishan Joshi
+ *      Author: PL-44 Capstone Team, UBC Vancouver
  */
 
 #ifndef INCLUDE_DATABASEMESSAGE_H_
@@ -12,6 +12,7 @@
 	#include <tmx/messages/message.hpp>
 	#include <tmx/TmxApiMessages.h>
 	#include "MessageTypes.h"
+	#include <tmx/messages/routeable_message.hpp>
 #else
 	#include <tmx/messages/faux_message.hpp>
 #endif
