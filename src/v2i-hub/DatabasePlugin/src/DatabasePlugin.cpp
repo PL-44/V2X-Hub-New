@@ -43,9 +43,7 @@ protected:
 	void OnStateChange(IvpPluginState state);
 
 	void HandleDataChangeMessage(DataChangeMessage &msg, routeable_message &routeableMsg);
-	void HandleDatabaseMessage(DatabaseMessage &msg, routeable_message &routeableMsg);
 	void InsertDatabaseMessage(uint64_t timestamp, int number_of_vehicles_in_road_segment, double average_speed_of_vehicles_in_road_segment, double speed_limit_of_road_segment, double throughput_of_road_segment);
-	// void HandleDatabaseMessage(DatabaseMessage &msg, routeable_message &routeableMsg);
 	void OnMessageReceived(IvpMessage *msg);
 private:
 	std::atomic<uint64_t> _frequency{0};
