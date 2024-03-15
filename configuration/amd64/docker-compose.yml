@@ -95,6 +95,7 @@ services:
       - 3111:3000
     volumes:
       - ./dashboards/dashboard.yaml:/etc/grafana/provisioning/dashboards/main.yaml
+      - ./datasources/datasources.yaml:/etc/grafana/provisioning/datasources/default.yaml
       - ./dashboards:/var/lib/grafana/dashboards
 
 secrets:
