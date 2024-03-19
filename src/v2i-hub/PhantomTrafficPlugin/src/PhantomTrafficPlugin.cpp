@@ -25,7 +25,7 @@ using namespace tmx;
 using namespace tmx::utils;
 using namespace tmx::messages;
 
-#define MSG_INTERVAL 5 // 5 seconds
+#define MSG_INTERVAL 1 // 1 seconds
 
 namespace PhantomTrafficPlugin
 {
@@ -134,39 +134,12 @@ namespace PhantomTrafficPlugin
 		BasicSafetyMessage *bsm = bsm_shared.get();
 		PLOG(logDEBUG) << "Received BSM Message: ";
 
-		// Determine if location, speed, and heading are valid.
-		// bool isValid = bsm->coreData.get_IsLocationValid() && bsm->coreData.get_IsSpeedValid() && bsm->coreData.get_IsHeadingValid();
-
-		// if (!isValid)
-		// {
-		// 	PLOG(logDEBUG) << "Received BSM with invalid location, speed, or heading.";
-		// 	return;
-		// }
-
-		// Print some of the BSM values.
-		// PLOG(logDEBUG) << "ID: " << bsm->coreData.get_TemporaryId()
-		// 	<< ", Location: (" <<  bsm->coreData.get_Latitude() << ", " <<  bsm->coreData.get_Longitude() << ")"
-		// 	<< ", Speed: " << bsm->coreData.get_Speed_kph() << "kph"
-		// 	<< ", Heading: " << bsm->coreData.get_Heading() << "°";
-
-		// Coordinates of slowdown region
-		// Longitude = east-west (increases towards east,more negative towards west)
-		// Latitude = south-north (increases north, more negative towards south)
-		// double top_left_long; // top left corner
-		// double top_left_lat; // top left corner
-		// double top_right_long; // top right corner
-		// double top_right_lat; // top right corner
-		// double bottom_left_long; // bottom left corner
-		// double bottom_left_lat; // bottom left corner
-		// double bottom_right_long; // bottom right corner
-		// double bottom_right_lat; // bottom right corner
-
 		// Coordinates of the vehicle
 		double vehicle_long = (double)(bsm->coreData.Long / 1000000.0 - 180);
 		double vehicle_lat = (double)(bsm->coreData.lat / 1000000.0 - 180);
 
-		double long_start = -123.17995692947078;
-		double long_end = -123.170;
+		double long_start = -123.17995692947078; // Start of slowdown region
+		double long_end = -123.170; // End of slowdown region
 
 		// Vehicle ID
 		int32_t vehicle_id;
@@ -258,13 +231,10 @@ namespace PhantomTrafficPlugin
 				PLOG(logDEBUG) << "New speed: " << new_speed << "km/h";
 
 				// Set status information for monitoring in the admin portal
-				// bool vehicle_count_status = SetStatus("VehicleCountInSlowdown", vehicle_count); // Vehicle count in slowdown region
-				// bool speed_limit_status = SetStatus("SpeedLimit", new_speed); 					// New speed limit
 
 				// Create Database Message to send to the Database Plugin
 				double throughput = vehicle_count / MSG_INTERVAL; // throughput = vehicle count / message interval
 				uint64_t timestamp = Clock::GetMillisecondsSinceEpoch();
-				// DatabaseMessage db_msg = DatabaseMessage(timestamp, vehicle_count, average_speed, new_speed, throughput);
 
 				//  Create auto message to send to the Database Plugin
 				auto_message auto_db_message;
