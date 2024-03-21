@@ -112,6 +112,8 @@
             "mode": "thresholds"
           },
           "mappings": [],
+          "max": 15,
+          "min": 0,
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -154,10 +156,10 @@
       "targets": [
         {
           "datasource": "Postgres",
-          "editorMode": "builder",
+          "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT numcars FROM during LIMIT 50 ",
+          "rawSql": "SELECT numcars \r\nFROM during \r\nORDER BY timeperiod DESC  \r\nLIMIT 1",
           "refId": "A",
           "sql": {
             "columns": [
@@ -538,13 +540,13 @@
     "list": []
   },
   "time": {
-    "from": "2024-03-05T14:34:00.000Z",
-    "to": "2024-03-14T23:27:44.000Z"
+    "from": "2024-03-21T21:12:59.980Z",
+    "to": "2024-03-21T21:22:59.980Z"
   },
   "timepicker": {},
   "timezone": "browser",
   "title": "Road Segment 1 Visualizations",
   "uid": "bdfh8mehlgpvke",
-  "version": 4,
+  "version": 3,
   "weekStart": ""
 }
