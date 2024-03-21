@@ -138,8 +138,8 @@ namespace PhantomTrafficPlugin
 		double vehicle_long = (double)(bsm->coreData.Long / 1000000.0 - 180);
 		double vehicle_lat = (double)(bsm->coreData.lat / 1000000.0 - 180);
 
-		double long_start = -123.17995692947078; // Start of slowdown region
-		double long_end = -123.170; // End of slowdown region
+		double long_start = -123.185217; // Start of slowdown region
+		double long_end = -123.178521; // End of slowdown region
 
 		// Vehicle ID
 		int32_t vehicle_id;
