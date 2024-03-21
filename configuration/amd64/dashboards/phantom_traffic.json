@@ -290,6 +290,9 @@
           "placement": "bottom",
           "showLegend": true
         },
+        "timezone": [
+          "America/Vancouver"
+        ],
         "tooltip": {
           "mode": "single",
           "sort": "none"
@@ -396,8 +399,9 @@
           "mode": "single",
           "sort": "none"
         },
+        "xField": "time",
         "xTickLabelRotation": 0,
-        "xTickLabelSpacing": 0
+        "xTickLabelSpacing": 100
       },
       "targets": [
         {
@@ -499,8 +503,9 @@
           "mode": "single",
           "sort": "none"
         },
+        "xField": "TIME",
         "xTickLabelRotation": 0,
-        "xTickLabelSpacing": 0
+        "xTickLabelSpacing": 100
       },
       "targets": [
         {
@@ -508,7 +513,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT throughput, timeperiod as \"time\"\r\nFROM during WHERE roadsegmentid=1",
+          "rawSql": "SELECT throughput, timeperiod as \"TIME\"\r\nFROM during WHERE roadsegmentid=1",
           "refId": "A",
           "sql": {
             "columns": [
