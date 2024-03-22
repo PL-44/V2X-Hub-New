@@ -205,6 +205,7 @@ namespace PhantomTrafficPlugin
 		PLOG(logINFO) << "Starting plugin.";
 
 		double original_speed = 50.0; // km/h
+		double current_speed = original_speed;
 
 		while (_plugin->state != IvpPluginState_error)
 		{
@@ -256,9 +257,17 @@ namespace PhantomTrafficPlugin
 				PLOG(logDEBUG) << "Routeable DB Message sent" <<endl;
 
 				// Send updated speed limit to simulation using UDP at port 4500
+				// Only if the speed has changed
 				// Create string of just new speed limit
-				std::string new_speed_str = std::to_string(new_speed);
-				_signSimClient->Send(new_speed_str);
+				if (std::abs(new_speed - current_speed) > 0.01) // if (new_speed != current_speed)
+				{
+					current_speed = new_speed;
+					// Send the new speed limit to the simulation
+					// Convert the new speed to a string
+					std::string new_speed_str = std::to_string(new_speed);
+					_signSimClient->Send(new_speed_str);
+				}
+				// Otherwise don't send updated speed to simulation.
 
 				// The lock_guard automatically unlocks the mutex when it goes out of scope
 			}
