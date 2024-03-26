@@ -290,9 +290,6 @@
           "placement": "bottom",
           "showLegend": true
         },
-        "timezone": [
-          "America/Vancouver"
-        ],
         "tooltip": {
           "mode": "single",
           "sort": "none"
@@ -552,6 +549,6 @@
   "timezone": "browser",
   "title": "Road Segment 1 Visualizations",
   "uid": "bdfh8mehlgpvke",
-  "version": 3,
+  "version": 10,
   "weekStart": ""
 }
