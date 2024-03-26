@@ -233,19 +233,23 @@ namespace PhantomTrafficPlugin
 				double last_average_speed = average_speed;
 				average_speed = 0.0;
 				int count = 0;
+				PLOG(logDEBUG) << "Calculating average speed of vehicles in slowdown region.";
 				for (int32_t vehicle_id : vehicle_ids)
 				{
 					average_speed += last_speeds[vehicle_id];
 					count += 1;
 				}
+				PLOG(logDEBUG) << "Average speed: " << average_speed << "m/s" << " Count: " << count << " vehicles in slowdown region";
 
 				if (count > 0)
 				{
 					average_speed /= count;
+					PLOG(logDEBUG) << "Average speed: " << average_speed << "m/s";
 				}
 				else
 				{
 					average_speed = original_speed; // If no vehicles are in the slowdown region, set average speed to the original speed
+					PLOG(logDEBUG) << "No vehicles in slowdown region. Average speed: " << average_speed << "m/s";
 				}
 
 				current_speed = average_speed; // Set the current speed to the average speed
@@ -255,6 +259,7 @@ namespace PhantomTrafficPlugin
 
 				// Create Database Message to send to the Database Plugin
 				double throughput = number_of_vehicles_exited / MSG_INTERVAL; // throughput = number of vehicles that has exited slowdown zone / message interval
+				PLOG(logDEBUG) << "Throughput: " << throughput << " vehicles/second";
 				uint64_t timestamp = Clock::GetMillisecondsSinceEpoch();
 
 				//  Create auto message to send to the Database Plugin
@@ -280,12 +285,13 @@ namespace PhantomTrafficPlugin
 				// Only if the average speed has changed >= 2m/s
 				// Create string of just new speed limit
 				// if (std::abs(current_speed - last_average_speed) >= 2) // if difference > 2m/s
-				if (average_speed < 10) // 10m/s
+				if (average_speed <= 10 && count != 0) // 10m/s
 				{
 					// Send the new speed limit to the simulation
 					// Convert the new speed to a string
 					std::string new_speed_str = std::to_string(average_speed);
 					_signSimClient->Send(new_speed_str);
+					PLOG(logDEBUG) << "New speed limit sent to simulation: " << new_speed_str;
 				}
 				// Otherwise don't send updated speed to simulation.
 
