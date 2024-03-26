@@ -222,6 +222,7 @@ namespace PhantomTrafficPlugin
 		double average_speed = 0.0;
 
 		uint16_t num_missing_heartbeat = 0;
+		double previous_sent_speed = 0;
 
 		while (_plugin->state != IvpPluginState_error)
 		{
@@ -304,7 +305,16 @@ namespace PhantomTrafficPlugin
 					else new_speed -= reduction;
 					std::string new_speed_str = std::to_string(new_speed);
 					_signSimClient->Send(new_speed_str);
+					previous_sent_speed = new_speed;
 					PLOG(logDEBUG) << "New speed limit sent to simulation: " << new_speed_str;
+				}
+				else
+				{
+					if (previous_sent_speed != original_speed) {
+						std::string original = std::to_string(original_speed);
+						previous_sent_speed = original_speed;
+						_signSimClient->Send(original);
+					}
 				}
 
 				// The lock_guard automatically unlocks the mutex when it goes out of scope
