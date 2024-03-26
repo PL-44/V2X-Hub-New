@@ -289,14 +289,15 @@ namespace PhantomTrafficPlugin
 				PLOG(logDEBUG) << "Routeable DB Message sent" << endl;
 
 				// Average speed always even (resolution of 2 m/s)
-				average_speed -= average_speed % 2;
+				average_speed -= (double) (((uint16_t) average_speed) % 2);
 
 				PLOG(logDEBUG) << "Phantom Traffic Msg: " << average_speed << endl;
 
 				// Only send if slow down detected with a non empty zone
 				if (average_speed < SLOW_DOWN_THRES && vehicle_count > 0)
 				{
-					std::string new_speed_str = std::to_string(average_speed);
+					uint16_t new_speed = (uint16_t) average_speed;
+					std::string new_speed_str = std::to_string(new_speed);
 					_signSimClient->Send(new_speed_str);
 					PLOG(logDEBUG) << "New speed limit sent to simulation: " << new_speed_str;
 				}
