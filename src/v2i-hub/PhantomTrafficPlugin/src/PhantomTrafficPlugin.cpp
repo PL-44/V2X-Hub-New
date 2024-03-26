@@ -215,11 +215,11 @@ namespace PhantomTrafficPlugin
 	{
 		PLOG(logINFO) << "Starting plugin.";
 
-		const u_int16_t original_speed = 25.0; // m/s
-		u_int16_t current_speed = original_speed;
-		u_int16_t average_speed = 0.0;
+		const double original_speed = 25.0; // m/s
+		uint16_t current_speed = original_speed;
+		double average_speed = 0.0;
 
-		u_int16_t num_missing_heartbeat = 0;
+		uint16_t num_missing_heartbeat = 0;
 
 		while (_plugin->state != IvpPluginState_error)
 		{
@@ -236,16 +236,16 @@ namespace PhantomTrafficPlugin
 				std::lock_guard<std::mutex> lock(vehicle_ids_mutex);
 
 				// Calculate the average speed of vehicles in the slowdown region
-				u_int16_t last_average_speed = average_speed;
+				double last_average_speed = average_speed;
 				average_speed = 0.0;
 				int count = 0;
 				PLOG(logDEBUG) << "Calculating average speed of vehicles in slowdown region.";
 				for (int32_t vehicle_id : vehicle_ids)
 				{
-					average_speed += (u_int16_t)last_speeds[vehicle_id];
+					average_speed += last_speeds[vehicle_id];
 					count += 1;
 				}
-				PLOG(logDEBUG) << "Average speed: " << average_speed << "m/s" << " Count: " << count << " vehicles in slowdown region";
+				PLOG(logDEBUG) << "Sum speed: " << average_speed << "m/s" << " Count: " << count << " vehicles in slowdown region";
 
 				if (count > 0)
 				{
