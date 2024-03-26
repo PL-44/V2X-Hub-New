@@ -298,7 +298,8 @@ namespace PhantomTrafficPlugin
 				// Only send if slow down detected with a non empty zone
 				if (average_speed <= SLOW_DOWN_THRES && count > 0)
 				{
-					uint16_t new_speed = (uint16_t) average_speed;
+					uint16_t new_speed = original_speed - (25./15.) * vehicle_count;
+					if (new_speed < 5) new_speed = 5;
 					std::string new_speed_str = std::to_string(new_speed);
 					_signSimClient->Send(new_speed_str);
 					PLOG(logDEBUG) << "New speed limit sent to simulation: " << new_speed_str;
