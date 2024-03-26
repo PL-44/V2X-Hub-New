@@ -175,9 +175,9 @@ namespace PhantomTrafficPlugin
 		// Lock the mutex
 		std::lock_guard<std::mutex> lock(vehicle_ids_mutex);
 
-		PLOG(logDEBUG) << "Got speed of vehicle " << vehicle_id << ": " << bsm->coreData.speed << "m/s";
+		PLOG(logDEBUG) << "Got speed of vehicle " << vehicle_id << ": " << bsm->coreData.speed / 1000 << "m/s";
 
-		last_speeds[vehicle_id] = (double) bsm->coreData.speed; // Update the last speed of the vehicle
+		last_speeds[vehicle_id] = (double) (bsm->coreData.speed / 1000); // Update the last speed of the vehicle
 
 		// Check if the vehicle is in the slowdown region.
 		if (vehicle_long >= long_start && vehicle_long <= long_end)
@@ -296,7 +296,7 @@ namespace PhantomTrafficPlugin
 				PLOG(logDEBUG) << "Phantom Traffic Msg: " << average_speed << endl;
 
 				// Only send if slow down detected with a non empty zone
-				if (average_speed < SLOW_DOWN_THRES && vehicle_count > 0)
+				if (average_speed <= SLOW_DOWN_THRES && count > 0)
 				{
 					uint16_t new_speed = (uint16_t) average_speed;
 					std::string new_speed_str = std::to_string(new_speed);
