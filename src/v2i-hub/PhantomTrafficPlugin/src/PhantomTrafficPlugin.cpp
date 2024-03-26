@@ -310,11 +310,12 @@ namespace PhantomTrafficPlugin
 				}
 				else
 				{
-					if (previous_sent_speed != original_speed) {
-						std::string original = std::to_string(original_speed);
-						previous_sent_speed = original_speed;
-						_signSimClient->Send(original);
-					}
+					// if (previous_sent_speed != original_speed) {
+					PLOG(logDEBUG) << "Original speed limit sent to simulation: " << original_speed << "m/s" << endl;
+					std::string original = std::to_string(original_speed);
+					previous_sent_speed = original_speed;
+					_signSimClient->Send(original);
+					// }
 				}
 
 				// The lock_guard automatically unlocks the mutex when it goes out of scope
