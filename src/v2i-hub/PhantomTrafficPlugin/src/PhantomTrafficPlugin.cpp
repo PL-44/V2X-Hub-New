@@ -223,7 +223,7 @@ namespace PhantomTrafficPlugin
 		{
 			number_of_vehicles_exited = 0; // Reset the number of vehicles exited
 			this_thread::sleep_for(chrono::milliseconds(MSG_INTERVAL * 1000));
-			PLOG(logDEBUG) << "Phantom Alive!" << endl;
+			PLOG(logDEBUG) << "Phantom Traffic Plugin Alive!" << endl;
 
 			// Only do work if the plugin is registered
 			if (_plugin->state == IvpPluginState_registered && heartbeat)
@@ -237,17 +237,14 @@ namespace PhantomTrafficPlugin
 				double last_average_speed = average_speed;
 				average_speed = 0.0;
 				int count = 0;
-				PLOG(logDEBUG) << "Calculating average speed of vehicles in slowdown region.";
 				for (int32_t vehicle_id : vehicle_ids)
 				{
 					average_speed += last_speeds[vehicle_id];
 					count += 1;
 				}
-				PLOG(logDEBUG) << "Sum speed: " << average_speed << "m/s" << " Count: " << count << " vehicles in slowdown region";
 
 				if (count > 0)
 				{
-					PLOG(logDEBUG) << "Calc average" << endl;
 					average_speed /= count;
 					PLOG(logDEBUG) << "Average speed: " << average_speed << "m/s";
 				}
@@ -264,7 +261,6 @@ namespace PhantomTrafficPlugin
 
 				// Create Database Message to send to the Database Plugin
 				double throughput = number_of_vehicles_exited / MSG_INTERVAL; // throughput = number of vehicles that has exited slowdown zone / message interval
-				PLOG(logDEBUG) << "Throughput: " << throughput << " vehicles/second";
 				uint64_t timestamp = Clock::GetMillisecondsSinceEpoch();
 
 				//  Create auto message to send to the Database Plugin
@@ -275,8 +271,6 @@ namespace PhantomTrafficPlugin
 				auto_db_message.auto_attribute<DatabaseMessage>(current_speed, "SpeedLimitOfRoadSegment");
 				auto_db_message.auto_attribute<DatabaseMessage>(throughput, "ThroughputOfRoadSegment");
 
-				PLOG(logDEBUG) << "Database Auto Message created: " << auto_db_message << endl;
-
 				// Refer: Plugin Programming Guide Page 13 for dynamic cast
 				routeable_message rMsg;
 				rMsg.set_type("Internal");
@@ -284,12 +278,8 @@ namespace PhantomTrafficPlugin
 				rMsg.set_payload(auto_db_message); // json encoding
 				this->BroadcastMessage(rMsg);
 
-				PLOG(logDEBUG) << "Routeable DB Message sent" << endl;
-
 				// Average speed always even (resolution of 2 m/s)
 				average_speed -= (double) (((uint16_t) average_speed) % 2);
-
-				PLOG(logDEBUG) << "Phantom Traffic Msg: " << average_speed << endl;
 
 				// Only send if slow down detected with a non empty zone
 				if (average_speed <= SLOW_DOWN_THRES && count > 0)
