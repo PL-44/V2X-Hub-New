@@ -191,6 +191,7 @@ namespace PhantomTrafficPlugin
 			{
 				vehicle_ids.erase(remove(vehicle_ids.begin(), vehicle_ids.end(), vehicle_id), vehicle_ids.end());
 				vehicle_count -= 1;
+				PLOG(logDEBUG) << "Decremented vehicle count" << endl;
 				number_of_vehicles_exited += 1;
 			}
 		}
