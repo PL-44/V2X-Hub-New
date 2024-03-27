@@ -63,10 +63,10 @@ namespace PhantomTrafficPlugin
 		std::atomic<uint64_t> _frequency{0};
 		DATA_MONITOR(_frequency);					  // Declares the
 		uint64_t vehicle_count;						  // vehicle count in the slowdown region
-		vector<int32_t> vehicle_ids;				  // vehicle IDs in the slowdown region
 		std::mutex vehicle_ids_mutex;				  // mutex for vehicle IDs
 		tmx::utils::UdpClient *_signSimClient = NULL; // UDP client for sending speed limit to simulation
-		std::map<int32_t, double> last_speeds;		  // map of vehicle IDs to their last speeds
+		std::map<uint32_t, uint64_t> vehicle_ids;	  // map of vehicle IDs to the time of their message
+		std::map<uint32_t, double> last_speeds;		  // map of vehicle IDs to their last speeds
 		uint64_t number_of_vehicles_exited;			  // number of vehicles that have exited the slowdown region
 
 		bool heartbeat = false; // true when it receives message from phantom traffic
@@ -85,9 +85,6 @@ namespace PhantomTrafficPlugin
 
 		// Add a message filter and handler for each message this plugin wants to receive.
 		AddMessageFilter<BsmMessage>(this, &PhantomTrafficPlugin::HandleBasicSafetyMessage);
-
-		// This is an internal message type that is used to track some plugin data that changes
-		AddMessageFilter<DataChangeMessage>(this, &PhantomTrafficPlugin::HandleDataChangeMessage);
 
 		// Subscribe to all messages specified by the filters above.
 		SubscribeToMessages();
@@ -167,7 +164,7 @@ namespace PhantomTrafficPlugin
 		double long_end = -123.178521;	 // End of slowdown region
 
 		// Vehicle ID
-		int32_t vehicle_id;
+		uint32_t vehicle_id;
 		memcpy(&vehicle_id, (unsigned char *)bsm->coreData.id.buf, 4);
 		// GetInt32((unsigned char *)bsm->coreData.id.buf, &vehicle_id); // vehicle ID (
 
@@ -179,32 +176,20 @@ namespace PhantomTrafficPlugin
 		// Check if the vehicle is in the slowdown region.
 		if (vehicle_long >= long_start && vehicle_long <= long_end)
 		{
-			if (find(vehicle_ids.begin(), vehicle_ids.end(), vehicle_id) == vehicle_ids.end())
+			if (vehicle_ids.count(vehicle_id) == 0) // Vehicle is in the slowdown region, but not tracked yet
 			{
-				vehicle_ids.push_back(vehicle_id);
-				vehicle_count += 1;
+				PLOG(logDEBUG) << "Vehicle ID: " << vehicle_id << " is in the slowdown region." << endl;
+				vehicle_ids[vehicle_id] = Clock::GetMillisecondsSinceEpoch(); // Add the vehicle to the map of vehicle IDs
+				vehicle_count += 1; // Increment the vehicle count
+			}
+			else // Vehicle is already in the slowdown region
+			{
+				vehicle_ids[vehicle_id] = Clock::GetMillisecondsSinceEpoch(); // Update the time of the vehicle message
 			}
 		}
-		else // Vehicle is not in the slowdown region
-		{
-			if (find(vehicle_ids.begin(), vehicle_ids.end(), vehicle_id) != vehicle_ids.end())
-			{
-				vehicle_ids.erase(remove(vehicle_ids.begin(), vehicle_ids.end(), vehicle_id), vehicle_ids.end());
-				vehicle_count -= 1;
-				PLOG(logDEBUG) << "Decremented vehicle count" << endl;
-				number_of_vehicles_exited += 1;
-			}
-		}
+		// else do nothing. Vehicle is not in the slowdown region.
 
 		// The lock_guard automatically unlocks the mutex when it goes out of scope
-	}
-
-	// Example of handling
-	void PhantomTrafficPlugin::HandleDataChangeMessage(DataChangeMessage &msg, routeable_message &routeableMsg)
-	{
-		PLOG(logINFO) << "Received a data change message: " << msg;
-
-		PLOG(logINFO) << "Data field " << msg.get_untyped(msg.Name, "?") << " has changed from " << msg.get_untyped(msg.OldValue, "?") << " to " << msg.get_untyped(msg.NewValue, to_string(_frequency));
 	}
 
 	// Override of main method of the plugin that should not return until the plugin exits.
@@ -234,12 +219,27 @@ namespace PhantomTrafficPlugin
 				// Lock the mutex
 				std::lock_guard<std::mutex> lock(vehicle_ids_mutex);
 
+				// Remove stale vehicles from the map of vehicle IDs (3 seconds)
+				uint64_t current_time = Clock::GetMillisecondsSinceEpoch();
+				for (auto it = vehicle_ids.begin(); it != vehicle_ids.end();)
+				{
+					if (current_time - it->second > 3000)
+					{
+						PLOG(logDEBUG) << "Vehicle ID " << it->first << " removed due to stale time" << endl;
+						it = vehicle_ids.erase(it);
+						number_of_vehicles_exited += 1;
+						vehicle_count -= 1;
+					}
+					++it; // Increment the iterator
+				}
+
 				// Calculate the average speed of vehicles in the slowdown region
 				double last_average_speed = average_speed;
 				average_speed = 0.0;
 				int count = 0;
-				for (int32_t vehicle_id : vehicle_ids)
+				for (auto it = vehicle_ids.begin(); it != vehicle_ids.end(); ++it)
 				{
+					uint32_t vehicle_id = it->first;
 					average_speed += last_speeds[vehicle_id];
 					count += 1;
 				}
