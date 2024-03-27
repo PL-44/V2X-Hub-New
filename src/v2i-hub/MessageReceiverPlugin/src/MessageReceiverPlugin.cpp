@@ -95,7 +95,7 @@ namespace MessageReceiver
 		message->coreData.lat = (Latitude_t)latitude;
 		message->coreData.Long = (Longitude_t)longitude;
 		message->coreData.elev = 72;
-		message->coreData.speed = (long) speed;
+		message->coreData.speed = (Speed_t) speed;
 		message->coreData.heading = 0;
 		message->coreData.angle = 10;
 		message->coreData.transmission = 0; // allow 0...7

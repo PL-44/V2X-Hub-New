@@ -158,7 +158,6 @@ namespace PhantomTrafficPlugin
 		// Decode the BSM message
 		std::shared_ptr<BasicSafetyMessage> bsm_shared = msg.get_j2735_data();
 		BasicSafetyMessage *bsm = bsm_shared.get();
-		PLOG(logDEBUG) << "Received BSM Message: ";
 
 		// Coordinates of the vehicle
 		double vehicle_long = (double)(bsm->coreData.Long / 1000000.0 - 180);
@@ -175,8 +174,6 @@ namespace PhantomTrafficPlugin
 		// Lock the mutex
 		std::lock_guard<std::mutex> lock(vehicle_ids_mutex);
 
-		PLOG(logDEBUG) << "Got speed of vehicle " << vehicle_id << ": " << bsm->coreData.speed / 1000 << "m/s";
-
 		last_speeds[vehicle_id] = (double) (bsm->coreData.speed / 1000); // Update the last speed of the vehicle
 
 		// Check if the vehicle is in the slowdown region.
@@ -186,7 +183,6 @@ namespace PhantomTrafficPlugin
 			{
 				vehicle_ids.push_back(vehicle_id);
 				vehicle_count += 1;
-				PLOG(logDEBUG) << "Vehicle count in slowdown region: " << vehicle_count;
 			}
 		}
 		else // Vehicle is not in the slowdown region
@@ -196,7 +192,6 @@ namespace PhantomTrafficPlugin
 				vehicle_ids.erase(remove(vehicle_ids.begin(), vehicle_ids.end(), vehicle_id), vehicle_ids.end());
 				vehicle_count -= 1;
 				number_of_vehicles_exited += 1;
-				PLOG(logDEBUG) << "Vehicle count in slowdown region: " << vehicle_count;
 			}
 		}
 
@@ -306,17 +301,17 @@ namespace PhantomTrafficPlugin
 					std::string new_speed_str = std::to_string(new_speed);
 					_signSimClient->Send(new_speed_str);
 					previous_sent_speed = new_speed;
-					PLOG(logDEBUG) << "New speed limit sent to simulation: " << new_speed_str;
+					PLOG(logDEBUG) << "New speed limit sent to simulation: " << new_speed_str << " Count: " << vehicle_count << " Average Speed: " << average_speed << endl;
 				}
 				else
-				{
-					// if (previous_sent_speed != original_speed) {
+				// {
+				// 	// if (previous_sent_speed != original_speed) {
 					PLOG(logDEBUG) << "Original speed limit sent to simulation: " << original_speed << "m/s" << endl;
 					std::string original = std::to_string(original_speed);
 					previous_sent_speed = original_speed;
 					_signSimClient->Send(original);
-					// }
-				}
+				// 	// }
+				// }
 
 				// The lock_guard automatically unlocks the mutex when it goes out of scope
 			}
