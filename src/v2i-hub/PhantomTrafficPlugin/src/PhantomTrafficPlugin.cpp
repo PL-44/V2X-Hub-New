@@ -63,6 +63,13 @@ namespace PhantomTrafficPlugin
 		}
 
 		void reset_systemvars(void);
+		void InitializePlugin(void);
+		void CleanupStaleVehicles(void);
+		void CalculateAverageSpeed(void);
+		void AdjustSpeedLimit(void);
+		void ProcessTrafficData(void);
+		void SendDatabaseMessage(void);
+		void HandleHeartbeat(void);
 
 	private:
 		std::atomic<uint64_t> _frequency{0};
@@ -79,7 +86,6 @@ namespace PhantomTrafficPlugin
 		uint16_t num_missing_heartbeat;
 		double previous_sent_speed = 0;
 		double throughput = 0;
-
 		bool heartbeat = false; // true when it receives message from phantom traffic
 		bool sysreset = false;	// is system in reset state
 	};
