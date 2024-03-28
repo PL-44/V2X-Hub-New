@@ -11,6 +11,7 @@
 
 #include <atomic>
 #include <thread>
+// #include <algorithm>
 #include <DecodedBsmMessage.h>
 #include <DatabaseMessage.h>
 #include <UdpClient.h>
@@ -26,14 +27,29 @@ using namespace tmx;
 using namespace tmx::utils;
 using namespace tmx::messages;
 
-#define MSG_INTERVAL 1 // 1 seconds
-#define SLOW_DOWN_THRES 10
+#define MSG_INTERVAL 500 // 1 seconds
+#define SLOW_DOWN_THRES 25
 #define NEW_SPEED_FACTOR 1
 #define MAX_MISSING_HEARTBEAT 5
 #define STALE_THRESHOLD 3 * 1000 // 3 seconds
+#define MIN_SPEED 5				 // m/s
 #define MAX_SLOWDOWN 20			 // m/s
 #define MAX_VEHICLES_IN_SLOWDOWN 15
 #define SLOWDOWN_FACTOR (double)((double)MAX_SLOWDOWN / (double)MAX_VEHICLES_IN_SLOWDOWN)
+
+#define CONFIG_2
+
+#ifdef CONFIG_1
+#define START_LONG -123.185217
+#define END_LONG -123.178521
+#endif
+
+#ifdef CONFIG_2
+#define START_LONG -123.177763
+#define END_LONG -123.176181
+#endif
+
+using namespace std;
 
 namespace PhantomTrafficPlugin
 {
@@ -177,8 +193,8 @@ namespace PhantomTrafficPlugin
 		double vehicle_long = (double)(bsm->coreData.Long / 1000000.0 - 180);
 		double vehicle_lat = (double)(bsm->coreData.lat / 1000000.0 - 180);
 
-		double long_start = -123.185217; // Start of slowdown region
-		double long_end = -123.178521;	 // End of slowdown region
+		double long_start = START_LONG; // Start of slowdown region
+		double long_end = END_LONG;		// End of slowdown region
 
 		// Vehicle ID
 		uint32_t vehicle_id;
@@ -241,27 +257,30 @@ namespace PhantomTrafficPlugin
 	{
 		average_speed = 0.0;
 		int count = 0;
-		for (auto it = vehicle_ids.begin(); it != vehicle_ids.end();) 
+		for (auto it = vehicle_ids.begin(); it != vehicle_ids.end(); ++it)
 		{
 			average_speed += last_speeds[it->first];
 			count++;
 		}
 		average_speed = (count > 0) ? (double)(average_speed / (double)count) : original_speed;
 		average_speed -= (double)(((uint16_t)average_speed) % 2);
-		current_speed = average_speed * NEW_SPEED_FACTOR;
 	}
 
 	void PhantomTrafficPlugin::AdjustSpeedLimit()
 	{
 		// Only send if slow down detected with a non empty zone
-		if (average_speed <= SLOW_DOWN_THRES && vehicle_ids.size() > 0)
+		if (average_speed < SLOW_DOWN_THRES && vehicle_ids.size() > 0)
 		{
 			double reduction = (SLOWDOWN_FACTOR * vehicle_count);
-			uint16_t new_speed = original_speed;
+			uint16_t new_speed = (uint16_t)original_speed;
+
+			// new_speed = max(new_speed - (uint16_t)reduction, MIN_SPEED);
 			if (reduction >= MAX_SLOWDOWN)
 				new_speed = 5;
 			else
 				new_speed -= reduction;
+
+			new_speed *= NEW_SPEED_FACTOR;
 			std::string new_speed_str = std::to_string(new_speed);
 			_signSimClient->Send(new_speed_str);
 			previous_sent_speed = new_speed;
@@ -296,7 +315,7 @@ namespace PhantomTrafficPlugin
 		auto_db_message.auto_attribute<DatabaseMessage>(timestamp, "Timestamp");
 		auto_db_message.auto_attribute<DatabaseMessage>(vehicle_count, "NumberOfVehiclesInRoadSegment");
 		auto_db_message.auto_attribute<DatabaseMessage>(average_speed, "AverageSpeedOfVehiclesInRoadSegment");
-		auto_db_message.auto_attribute<DatabaseMessage>(current_speed, "SpeedLimitOfRoadSegment");
+		auto_db_message.auto_attribute<DatabaseMessage>(previous_sent_speed, "SpeedLimitOfRoadSegment");
 		auto_db_message.auto_attribute<DatabaseMessage>(throughput, "ThroughputOfRoadSegment");
 
 		// Create routeable message to send to the Database Plugin
@@ -313,8 +332,8 @@ namespace PhantomTrafficPlugin
 		{
 			PLOG(logDEBUG) << "Phantom Traffic Plugin Alive!" << endl;
 			ProcessTrafficData();
-			SendDatabaseMessage();
 			AdjustSpeedLimit();
+			SendDatabaseMessage();
 		}
 		// Make sure to reset system speed and vehicle tracking once no heartbeat received
 		else if (!heartbeat && !sysreset)
@@ -341,7 +360,7 @@ namespace PhantomTrafficPlugin
 
 		while (_plugin->state != IvpPluginState_error)
 		{
-			this_thread::sleep_for(chrono::milliseconds(MSG_INTERVAL * 1000));
+			this_thread::sleep_for(chrono::milliseconds(MSG_INTERVAL));
 			HandleHeartbeat();
 		}
 
