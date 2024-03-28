@@ -2,6 +2,8 @@ ARG UBUNTU_VERSION=jammy-20230126
 
 FROM ubuntu:$UBUNTU_VERSION AS dependencies
 
+RUN apt-get install
+
 ENV DEBIAN_FRONTEND=noninteractive
 ADD scripts/install_dependencies.sh /usr/local/bin/
 RUN sed -i 's|http://archive.ubuntu.com|http://us.archive.ubuntu.com|g' /etc/apt/sources.list

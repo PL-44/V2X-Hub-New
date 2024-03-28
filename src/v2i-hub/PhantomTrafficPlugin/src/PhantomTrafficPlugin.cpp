@@ -31,9 +31,9 @@ using namespace tmx::messages;
 #define NEW_SPEED_FACTOR 1
 #define MAX_MISSING_HEARTBEAT 5
 #define STALE_THRESHOLD 3 * 1000 // 3 seconds
-#define MAX_SLOWDOWN 20 // m/s
+#define MAX_SLOWDOWN 20			 // m/s
 #define MAX_VEHICLES_IN_SLOWDOWN 15
-#define SLOWDOWN_FACTOR (double) ((double) MAX_SLOWDOWN / (double) MAX_VEHICLES_IN_SLOWDOWN)
+#define SLOWDOWN_FACTOR (double)((double)MAX_SLOWDOWN / (double)MAX_VEHICLES_IN_SLOWDOWN)
 
 namespace PhantomTrafficPlugin
 {
@@ -80,7 +80,7 @@ namespace PhantomTrafficPlugin
 		std::map<uint32_t, uint64_t> vehicle_ids;	  // map of vehicle IDs to the time of their message
 		std::map<uint32_t, double> last_speeds;		  // map of vehicle IDs to their last speeds
 		uint64_t number_of_vehicles_exited;			  // number of vehicles that have exited the slowdown region
-		const double original_speed = 25.0; // m/s
+		const double original_speed = 25.0;			  // m/s
 		uint16_t current_speed;
 		double average_speed;
 		uint16_t num_missing_heartbeat;
@@ -188,7 +188,7 @@ namespace PhantomTrafficPlugin
 		// Lock the mutex
 		std::lock_guard<std::mutex> lock(vehicle_ids_mutex);
 
-		last_speeds[vehicle_id] = (double) (bsm->coreData.speed / 1000); // Update the last speed of the vehicle
+		last_speeds[vehicle_id] = (double)(bsm->coreData.speed / 1000); // Update the last speed of the vehicle
 
 		// Check if the vehicle is in the slowdown region.
 		if (vehicle_long >= long_start && vehicle_long <= long_end)
@@ -197,7 +197,7 @@ namespace PhantomTrafficPlugin
 			{
 				PLOG(logDEBUG) << "Vehicle ID: " << vehicle_id << " is in the slowdown region." << endl;
 				vehicle_ids[vehicle_id] = Clock::GetMillisecondsSinceEpoch(); // Add the vehicle to the map of vehicle IDs
-				vehicle_count += 1; // Increment the vehicle count
+				vehicle_count += 1;											  // Increment the vehicle count
 			}
 			else // Vehicle is already in the slowdown region
 			{
@@ -209,7 +209,8 @@ namespace PhantomTrafficPlugin
 		// The lock_guard automatically unlocks the mutex when it goes out of scope
 	}
 
-	void PhantomTrafficPlugin::InitializePlugin() {
+	void PhantomTrafficPlugin::InitializePlugin()
+	{
 		PLOG(logINFO) << "Starting plugin.";
 
 		current_speed = original_speed;
@@ -219,43 +220,48 @@ namespace PhantomTrafficPlugin
 		previous_sent_speed = 0;
 	}
 
-	void PhantomTrafficPlugin::CleanupStaleVehicles() {
+	void PhantomTrafficPlugin::CleanupStaleVehicles()
+	{
 		uint64_t current_time = Clock::GetMillisecondsSinceEpoch();
-		for (auto it = vehicle_ids.begin(); it != vehicle_ids.end();) 
+		for (auto it = vehicle_ids.begin(); it != vehicle_ids.end();)
 		{
 			if (current_time - it->second > STALE_THRESHOLD) // 3 seconds threshold
-			{ 
+			{
 				it = vehicle_ids.erase(it);
 				vehicle_count -= 1;
-			} 
-			else 
+			}
+			else
 			{
 				++it; // Only increment if not erased because erase already increments the iterator
 			}
 		}
 	}
 
-	void PhantomTrafficPlugin::CalculateAverageSpeed() {
+	void PhantomTrafficPlugin::CalculateAverageSpeed()
+	{
 		average_speed = 0.0;
 		int count = 0;
-		for (const auto& [vehicle_id, _] : vehicle_ids) 
+		for (const auto &[vehicle_id, _] : vehicle_ids)
 		{
 			average_speed += last_speeds[vehicle_id];
 			count++;
 		}
-		average_speed = (count > 0) ? (double) (average_speed / (double) count) : original_speed;
-		average_speed -= (double) (((uint16_t) average_speed) % 2);
+		average_speed = (count > 0) ? (double)(average_speed / (double)count) : original_speed;
+		average_speed -= (double)(((uint16_t)average_speed) % 2);
 		current_speed = average_speed * NEW_SPEED_FACTOR;
 	}
 
-	void PhantomTrafficPlugin::AdjustSpeedLimit() {
+	void PhantomTrafficPlugin::AdjustSpeedLimit()
+	{
 		// Only send if slow down detected with a non empty zone
 		if (average_speed <= SLOW_DOWN_THRES && vehicle_ids.size() > 0)
 		{
 			double reduction = (SLOWDOWN_FACTOR * vehicle_count);
 			uint16_t new_speed = original_speed;
-			if (reduction >= MAX_SLOWDOWN) new_speed = 5;
-			else new_speed -= reduction;
+			if (reduction >= MAX_SLOWDOWN)
+				new_speed = 5;
+			else
+				new_speed -= reduction;
 			std::string new_speed_str = std::to_string(new_speed);
 			_signSimClient->Send(new_speed_str);
 			previous_sent_speed = new_speed;
@@ -263,22 +269,24 @@ namespace PhantomTrafficPlugin
 		}
 		else
 		{
-		// 	// if (previous_sent_speed != original_speed) { // enable if you want to limit messages sent to simulation
+			// 	// if (previous_sent_speed != original_speed) { // enable if you want to limit messages sent to simulation
 			PLOG(logDEBUG) << "Original speed limit sent to simulation: " << original_speed << "m/s" << endl;
 			std::string original = std::to_string(original_speed);
 			previous_sent_speed = original_speed;
 			_signSimClient->Send(original);
-		// 	// }
+			// 	// }
 		}
 	}
 
-	void PhantomTrafficPlugin::ProcessTrafficData() {
+	void PhantomTrafficPlugin::ProcessTrafficData()
+	{
 		std::lock_guard<std::mutex> lock(vehicle_ids_mutex);
 		CleanupStaleVehicles();
 		CalculateAverageSpeed();
 	}
 
-	void PhantomTrafficPlugin::SendDatabaseMessage() {
+	void PhantomTrafficPlugin::SendDatabaseMessage()
+	{
 		// Create Database Message to send to the Database Plugin
 		throughput = number_of_vehicles_exited / MSG_INTERVAL; // throughput = number of vehicles that has exited slowdown zone / message interval
 		uint64_t timestamp = Clock::GetMillisecondsSinceEpoch();
@@ -298,21 +306,29 @@ namespace PhantomTrafficPlugin
 		rMsg.set_payload(auto_db_message); // json encoding
 		this->BroadcastMessage(rMsg);
 	}
-	
 
-	void PhantomTrafficPlugin::HandleHeartbeat() {
-		if (_plugin->state == IvpPluginState_registered && heartbeat) {
+	void PhantomTrafficPlugin::HandleHeartbeat()
+	{
+		if (_plugin->state == IvpPluginState_registered)
+		{
 			PLOG(logDEBUG) << "Phantom Traffic Plugin Alive!" << endl;
 			ProcessTrafficData();
 			SendDatabaseMessage();
 			AdjustSpeedLimit();
-			heartbeat = false;
-			sysreset = false;
-		} else if (!heartbeat && !sysreset) {
-			if (num_missing_heartbeat++ > MAX_MISSING_HEARTBEAT) {
+		}
+		// Make sure to reset system speed and vehicle tracking once no heartbeat received
+		else if (!heartbeat && !sysreset)
+		{
+			if (num_missing_heartbeat++ > MAX_MISSING_HEARTBEAT)
+			{
 				reset_systemvars();
 			}
-		} else {
+		}
+		else
+		{
+			heartbeat = false;
+			sysreset = false;
+
 			num_missing_heartbeat = 0;
 		}
 	}
