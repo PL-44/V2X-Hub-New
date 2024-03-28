@@ -68,6 +68,12 @@ namespace PhantomTrafficPlugin
 		std::map<uint32_t, uint64_t> vehicle_ids;	  // map of vehicle IDs to the time of their message
 		std::map<uint32_t, double> last_speeds;		  // map of vehicle IDs to their last speeds
 		uint64_t number_of_vehicles_exited;			  // number of vehicles that have exited the slowdown region
+		const double original_speed = 25.0; // m/s
+		uint16_t current_speed;
+		double average_speed;
+		uint16_t num_missing_heartbeat;
+		double previous_sent_speed = 0;
+		double throughput = 0;
 
 		bool heartbeat = false; // true when it receives message from phantom traffic
 		bool sysreset = false;	// is system in reset state
@@ -192,133 +198,124 @@ namespace PhantomTrafficPlugin
 		// The lock_guard automatically unlocks the mutex when it goes out of scope
 	}
 
+	void InitializePlugin() {
+		PLOG(logINFO) << "Starting plugin.";
+
+		current_speed = original_speed;
+		average_speed = 0.0;
+
+		num_missing_heartbeat = 0;
+		previous_sent_speed = 0;
+	}
+
+	void CleanupStaleVehicles() {
+		uint64_t current_time = Clock::GetMillisecondsSinceEpoch();
+		for (auto it = vehicle_ids.begin(); it != vehicle_ids.end();) 
+		{
+			if (current_time - it->second > 3000) // 3 seconds threshold
+			{ 
+				it = vehicle_ids.erase(it);
+				vehicle_count -= 1;
+			} 
+			else 
+			{
+				++it; // Only increment if not erased because erase already increments the iterator
+			}
+		}
+	}
+
+	void CalculateAverageSpeed() {
+		average_speed = 0.0;
+		int count = 0;
+		for (const auto& [vehicle_id, _] : vehicle_ids) 
+		{
+			average_speed += last_speeds[vehicle_id];
+			count++;
+		}
+		average_speed = (count > 0) ? (double) (average_speed / (double) count) : original_speed;
+		average_speed -= (double) (((uint16_t) average_speed) % 2);
+		current_speed = average_speed * NEW_SPEED_FACTOR;
+	}
+
+	void AdjustSpeedLimit() {
+		// Only send if slow down detected with a non empty zone
+		if (average_speed <= SLOW_DOWN_THRES && vehicle_ids.size() > 0)
+		{
+			double reduction = ((25./15.) * vehicle_count);
+			uint16_t new_speed = original_speed;
+			if (reduction >= 20) new_speed = 5;
+			else new_speed -= reduction;
+			std::string new_speed_str = std::to_string(new_speed);
+			_signSimClient->Send(new_speed_str);
+			previous_sent_speed = new_speed;
+			PLOG(logDEBUG) << "New speed limit sent to simulation: " << new_speed_str << " Count: " << vehicle_count << " Average Speed: " << average_speed << endl;
+		}
+		else
+		{
+		// 	// if (previous_sent_speed != original_speed) { // enable if you want to limit messages sent to simulation
+			PLOG(logDEBUG) << "Original speed limit sent to simulation: " << original_speed << "m/s" << endl;
+			std::string original = std::to_string(original_speed);
+			previous_sent_speed = original_speed;
+			_signSimClient->Send(original);
+		// 	// }
+		}
+	}
+
+	void ProcessTrafficData() {
+		std::lock_guard<std::mutex> lock(vehicle_ids_mutex);
+		CleanupStaleVehicles();
+		CalculateAverageSpeed();
+	}
+
+	void SendDatabaseMessage() {
+		// Create Database Message to send to the Database Plugin
+		throughput = number_of_vehicles_exited / MSG_INTERVAL; // throughput = number of vehicles that has exited slowdown zone / message interval
+		uint64_t timestamp = Clock::GetMillisecondsSinceEpoch();
+
+		//  Create auto message to send to the Database Plugin
+		auto_message auto_db_message;
+		auto_db_message.auto_attribute<DatabaseMessage>(timestamp, "Timestamp");
+		auto_db_message.auto_attribute<DatabaseMessage>(vehicle_count, "NumberOfVehiclesInRoadSegment");
+		auto_db_message.auto_attribute<DatabaseMessage>(average_speed, "AverageSpeedOfVehiclesInRoadSegment");
+		auto_db_message.auto_attribute<DatabaseMessage>(current_speed, "SpeedLimitOfRoadSegment");
+		auto_db_message.auto_attribute<DatabaseMessage>(throughput, "ThroughputOfRoadSegment");
+
+		// Create routeable message to send to the Database Plugin
+		routeable_message rMsg;
+		rMsg.set_type("Internal");
+		rMsg.set_subtype("DatabaseMessage");
+		rMsg.set_payload(auto_db_message); // json encoding
+		this->BroadcastMessage(rMsg);
+	}
+	
+
+	void HandleHeartbeat() {
+		if (_plugin->state == IvpPluginState_registered && heartbeat) {
+			PLOG(logDEBUG) << "Phantom Traffic Plugin Alive!" << endl;
+			ProcessTrafficData();
+			SendDatabaseMessage();
+			AdjustSpeedLimit();
+			heartbeat = false;
+			sysreset = false;
+		} else if (!heartbeat && !sysreset) {
+			if (num_missing_heartbeat++ > 5) {
+				reset_systemvars();
+			}
+		} else {
+			num_missing_heartbeat = 0;
+		}
+	}
+
 	// Override of main method of the plugin that should not return until the plugin exits.
 	// This method does not need to be overridden if the plugin does not want to use the main thread.
 	int PhantomTrafficPlugin::Main()
 	{
-		PLOG(logINFO) << "Starting plugin.";
-
-		const double original_speed = 25.0; // m/s
-		uint16_t current_speed = original_speed;
-		double average_speed = 0.0;
-
-		uint16_t num_missing_heartbeat = 0;
-		double previous_sent_speed = 0;
+		InitializePlugin();
 
 		while (_plugin->state != IvpPluginState_error)
 		{
-			number_of_vehicles_exited = 0; // Reset the number of vehicles exited
 			this_thread::sleep_for(chrono::milliseconds(MSG_INTERVAL * 1000));
-			PLOG(logDEBUG) << "Phantom Traffic Plugin Alive!" << endl;
-
-			// Only do work if the plugin is registered
-			if (_plugin->state == IvpPluginState_registered && heartbeat)
-			{
-				heartbeat = false;
-				sysreset = false;
-				// Lock the mutex
-				std::lock_guard<std::mutex> lock(vehicle_ids_mutex);
-
-				// Remove stale vehicles from the map of vehicle IDs (3 seconds)
-				uint64_t current_time = Clock::GetMillisecondsSinceEpoch();
-				for (auto it = vehicle_ids.begin(); it != vehicle_ids.end();)
-				{
-					if (current_time - it->second > 3000)
-					{
-						PLOG(logDEBUG) << "Vehicle ID " << it->first << " removed due to stale time" << endl;
-						it = vehicle_ids.erase(it);
-						number_of_vehicles_exited += 1;
-						vehicle_count -= 1;
-					}
-					++it; // Increment the iterator
-				}
-
-				// Calculate the average speed of vehicles in the slowdown region
-				double last_average_speed = average_speed;
-				average_speed = 0.0;
-				int count = 0;
-				for (auto it = vehicle_ids.begin(); it != vehicle_ids.end(); ++it)
-				{
-					uint32_t vehicle_id = it->first;
-					average_speed += last_speeds[vehicle_id];
-					count += 1;
-				}
-
-				if (count > 0)
-				{
-					average_speed /= count;
-					PLOG(logDEBUG) << "Average speed: " << average_speed << "m/s";
-				}
-				else
-				{
-					average_speed = original_speed; // If no vehicles are in the slowdown region, set average speed to the original speed
-					PLOG(logDEBUG) << "No vehicles in slowdown region. Average speed: " << average_speed << "m/s";
-				}
-
-				current_speed = average_speed; // Set the current speed to the average speed
-
-				// Apply scaling factor
-				current_speed = current_speed * NEW_SPEED_FACTOR;
-
-				// Create Database Message to send to the Database Plugin
-				double throughput = number_of_vehicles_exited / MSG_INTERVAL; // throughput = number of vehicles that has exited slowdown zone / message interval
-				uint64_t timestamp = Clock::GetMillisecondsSinceEpoch();
-
-				//  Create auto message to send to the Database Plugin
-				auto_message auto_db_message;
-				auto_db_message.auto_attribute<DatabaseMessage>(timestamp, "Timestamp");
-				auto_db_message.auto_attribute<DatabaseMessage>(vehicle_count, "NumberOfVehiclesInRoadSegment");
-				auto_db_message.auto_attribute<DatabaseMessage>(average_speed, "AverageSpeedOfVehiclesInRoadSegment");
-				auto_db_message.auto_attribute<DatabaseMessage>(current_speed, "SpeedLimitOfRoadSegment");
-				auto_db_message.auto_attribute<DatabaseMessage>(throughput, "ThroughputOfRoadSegment");
-
-				// Refer: Plugin Programming Guide Page 13 for dynamic cast
-				routeable_message rMsg;
-				rMsg.set_type("Internal");
-				rMsg.set_subtype("DatabaseMessage");
-				rMsg.set_payload(auto_db_message); // json encoding
-				this->BroadcastMessage(rMsg);
-
-				// Average speed always even (resolution of 2 m/s)
-				average_speed -= (double) (((uint16_t) average_speed) % 2);
-
-				// Only send if slow down detected with a non empty zone
-				if (average_speed <= SLOW_DOWN_THRES && count > 0)
-				{
-					double reduction = ((25./15.) * vehicle_count);
-					uint16_t new_speed = original_speed;
-					if (reduction >= 20) new_speed = 5;
-					else new_speed -= reduction;
-					std::string new_speed_str = std::to_string(new_speed);
-					_signSimClient->Send(new_speed_str);
-					previous_sent_speed = new_speed;
-					PLOG(logDEBUG) << "New speed limit sent to simulation: " << new_speed_str << " Count: " << vehicle_count << " Average Speed: " << average_speed << endl;
-				}
-				else
-				// {
-				// 	// if (previous_sent_speed != original_speed) {
-					PLOG(logDEBUG) << "Original speed limit sent to simulation: " << original_speed << "m/s" << endl;
-					std::string original = std::to_string(original_speed);
-					previous_sent_speed = original_speed;
-					_signSimClient->Send(original);
-				// 	// }
-				// }
-
-				// The lock_guard automatically unlocks the mutex when it goes out of scope
-			}
-
-			// Make sure to reset system speed and vehicle tracking once no heartbeat received
-			else if (!heartbeat && !sysreset)
-			{
-				if (num_missing_heartbeat++ > 5)
-				{
-					reset_systemvars();
-				}
-			}
-			else
-			{
-				num_missing_heartbeat = 0;
-			}
+			HandleHeartbeat();
 		}
 
 		PLOG(logINFO) << "Plugin terminating gracefully.";
