@@ -209,7 +209,7 @@ namespace PhantomTrafficPlugin
 		// The lock_guard automatically unlocks the mutex when it goes out of scope
 	}
 
-	void InitializePlugin() {
+	void PhantomTrafficPlugin::InitializePlugin() {
 		PLOG(logINFO) << "Starting plugin.";
 
 		current_speed = original_speed;
@@ -219,7 +219,7 @@ namespace PhantomTrafficPlugin
 		previous_sent_speed = 0;
 	}
 
-	void CleanupStaleVehicles() {
+	void PhantomTrafficPlugin::CleanupStaleVehicles() {
 		uint64_t current_time = Clock::GetMillisecondsSinceEpoch();
 		for (auto it = vehicle_ids.begin(); it != vehicle_ids.end();) 
 		{
@@ -235,7 +235,7 @@ namespace PhantomTrafficPlugin
 		}
 	}
 
-	void CalculateAverageSpeed() {
+	void PhantomTrafficPlugin::CalculateAverageSpeed() {
 		average_speed = 0.0;
 		int count = 0;
 		for (const auto& [vehicle_id, _] : vehicle_ids) 
@@ -248,7 +248,7 @@ namespace PhantomTrafficPlugin
 		current_speed = average_speed * NEW_SPEED_FACTOR;
 	}
 
-	void AdjustSpeedLimit() {
+	void PhantomTrafficPlugin::AdjustSpeedLimit() {
 		// Only send if slow down detected with a non empty zone
 		if (average_speed <= SLOW_DOWN_THRES && vehicle_ids.size() > 0)
 		{
@@ -272,13 +272,13 @@ namespace PhantomTrafficPlugin
 		}
 	}
 
-	void ProcessTrafficData() {
+	void PhantomTrafficPlugin::ProcessTrafficData() {
 		std::lock_guard<std::mutex> lock(vehicle_ids_mutex);
 		CleanupStaleVehicles();
 		CalculateAverageSpeed();
 	}
 
-	void SendDatabaseMessage() {
+	void PhantomTrafficPlugin::SendDatabaseMessage() {
 		// Create Database Message to send to the Database Plugin
 		throughput = number_of_vehicles_exited / MSG_INTERVAL; // throughput = number of vehicles that has exited slowdown zone / message interval
 		uint64_t timestamp = Clock::GetMillisecondsSinceEpoch();
@@ -300,7 +300,7 @@ namespace PhantomTrafficPlugin
 	}
 	
 
-	void HandleHeartbeat() {
+	void PhantomTrafficPlugin::HandleHeartbeat() {
 		if (_plugin->state == IvpPluginState_registered && heartbeat) {
 			PLOG(logDEBUG) << "Phantom Traffic Plugin Alive!" << endl;
 			ProcessTrafficData();
