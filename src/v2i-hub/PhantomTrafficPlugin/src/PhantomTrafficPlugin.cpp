@@ -29,6 +29,11 @@ using namespace tmx::messages;
 #define MSG_INTERVAL 1 // 1 seconds
 #define SLOW_DOWN_THRES 10
 #define NEW_SPEED_FACTOR 1
+#define MAX_MISSING_HEARTBEAT 5
+#define STALE_THRESHOLD 3 * 1000 // 3 seconds
+#define MAX_SLOWDOWN 20 // m/s
+#define MAX_VEHICLES_IN_SLOWDOWN 15
+#define SLOWDOWN_FACTOR (double) ((double) MAX_SLOWDOWN / (double) MAX_VEHICLES_IN_SLOWDOWN)
 
 namespace PhantomTrafficPlugin
 {
@@ -212,7 +217,7 @@ namespace PhantomTrafficPlugin
 		uint64_t current_time = Clock::GetMillisecondsSinceEpoch();
 		for (auto it = vehicle_ids.begin(); it != vehicle_ids.end();) 
 		{
-			if (current_time - it->second > 3000) // 3 seconds threshold
+			if (current_time - it->second > STALE_THRESHOLD) // 3 seconds threshold
 			{ 
 				it = vehicle_ids.erase(it);
 				vehicle_count -= 1;
@@ -241,9 +246,9 @@ namespace PhantomTrafficPlugin
 		// Only send if slow down detected with a non empty zone
 		if (average_speed <= SLOW_DOWN_THRES && vehicle_ids.size() > 0)
 		{
-			double reduction = ((25./15.) * vehicle_count);
+			double reduction = (SLOWDOWN_FACTOR * vehicle_count);
 			uint16_t new_speed = original_speed;
-			if (reduction >= 20) new_speed = 5;
+			if (reduction >= MAX_SLOWDOWN) new_speed = 5;
 			else new_speed -= reduction;
 			std::string new_speed_str = std::to_string(new_speed);
 			_signSimClient->Send(new_speed_str);
@@ -298,7 +303,7 @@ namespace PhantomTrafficPlugin
 			heartbeat = false;
 			sysreset = false;
 		} else if (!heartbeat && !sysreset) {
-			if (num_missing_heartbeat++ > 5) {
+			if (num_missing_heartbeat++ > MAX_MISSING_HEARTBEAT) {
 				reset_systemvars();
 			}
 		} else {
