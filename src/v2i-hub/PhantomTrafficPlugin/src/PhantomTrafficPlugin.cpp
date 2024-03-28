@@ -241,7 +241,7 @@ namespace PhantomTrafficPlugin
 	{
 		average_speed = 0.0;
 		int count = 0;
-		for (const auto &[vehicle_id, _] : vehicle_ids)
+		for (int32_t vehicle_id : vehicle_ids) 
 		{
 			average_speed += last_speeds[vehicle_id];
 			count++;
