@@ -27,15 +27,15 @@ using namespace tmx;
 using namespace tmx::utils;
 using namespace tmx::messages;
 
-#define MSG_INTERVAL 500 // 1 seconds
-#define SLOW_DOWN_THRES 25
-#define NEW_SPEED_FACTOR 2
+#define MSG_INTERVAL 500
+#define SLOW_DOWN_THRES 10
+#define NEW_SPEED_FACTOR 3
 #define MAX_MISSING_HEARTBEAT 5
 #define STALE_THRESHOLD 3 * 1000 // 3 seconds
-#define MIN_SPEED 5				 // m/s
-#define MAX_SLOWDOWN 20			 // m/s
+
+#define MIN_SPEED 5 // m/s
+#define MAX_SPEED 25
 #define MAX_VEHICLES_IN_SLOWDOWN 15
-#define SLOWDOWN_FACTOR (double)((double)MAX_SLOWDOWN / (double)MAX_VEHICLES_IN_SLOWDOWN)
 
 #define CONFIG_2
 
@@ -271,16 +271,17 @@ namespace PhantomTrafficPlugin
 		// Only send if slow down detected with a non empty zone
 		if (average_speed < SLOW_DOWN_THRES && vehicle_ids.size() > 0)
 		{
-			double reduction = (SLOWDOWN_FACTOR * vehicle_count);
-			uint16_t new_speed = (uint16_t)original_speed;
+			double new_speed = (NEW_SPEED_FACTOR * average_speed) - MAX_SPEED * (vehicle_count / MAX_VEHICLES_IN_SLOWDOWN);
 
-			// new_speed = max(new_speed - (uint16_t)reduction, MIN_SPEED);
-			if (reduction >= MAX_SLOWDOWN)
-				new_speed = 5;
-			else
-				new_speed -= reduction;
+			if (new_speed <= MIN_SPEED)
+			{
+				new_speed = MIN_SPEED;
+			}
+			else if (new_speed >= MAX_SPEED)
+			{
+				new_speed = MAX_SPEED;
+			}
 
-			new_speed *= NEW_SPEED_FACTOR;
 			std::string new_speed_str = std::to_string(new_speed);
 			_signSimClient->Send(new_speed_str);
 			previous_sent_speed = new_speed;
