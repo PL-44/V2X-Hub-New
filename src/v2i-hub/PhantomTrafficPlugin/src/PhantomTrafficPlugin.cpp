@@ -29,7 +29,7 @@ using namespace tmx::messages;
 
 #define MSG_INTERVAL 500 // 1 seconds
 #define SLOW_DOWN_THRES 25
-#define NEW_SPEED_FACTOR 1
+#define NEW_SPEED_FACTOR 2
 #define MAX_MISSING_HEARTBEAT 5
 #define STALE_THRESHOLD 3 * 1000 // 3 seconds
 #define MIN_SPEED 5				 // m/s
@@ -328,15 +328,13 @@ namespace PhantomTrafficPlugin
 
 	void PhantomTrafficPlugin::HandleHeartbeat()
 	{
-		if (_plugin->state == IvpPluginState_registered)
-		{
-			PLOG(logDEBUG) << "Phantom Traffic Plugin Alive!" << endl;
-			ProcessTrafficData();
-			AdjustSpeedLimit();
-			SendDatabaseMessage();
-		}
+		PLOG(logDEBUG) << "Phantom Traffic Plugin Alive!" << endl;
+		ProcessTrafficData();
+		AdjustSpeedLimit();
+		SendDatabaseMessage();
+
 		// Make sure to reset system speed and vehicle tracking once no heartbeat received
-		else if (!heartbeat && !sysreset)
+		if (!heartbeat && !sysreset)
 		{
 			if (num_missing_heartbeat++ > MAX_MISSING_HEARTBEAT)
 			{
