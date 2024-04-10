@@ -335,9 +335,9 @@ namespace PhantomTrafficPlugin
 		SendDatabaseMessage();
 
 		// Make sure to reset system speed and vehicle tracking once no heartbeat received
-		if (!heartbeat && !sysreset)
+		if (!heartbeat)
 		{
-			if (num_missing_heartbeat++ > MAX_MISSING_HEARTBEAT)
+			if (!sysreset && num_missing_heartbeat++ > MAX_MISSING_HEARTBEAT)
 			{
 				reset_systemvars();
 			}
